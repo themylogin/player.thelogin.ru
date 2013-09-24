@@ -117,7 +117,7 @@ def file_path_for_serving(request):
     path = os.path.normpath(os.path.join(music_dir, request.GET["path"]))
     if os.path.commonprefix([music_dir, path]) != music_dir:
         raise HTTPForbidden()
-    if not os.path.exists(path):
+    if not os.path.exists(path.encode("utf8")):
         raise HTTPNotFound()
     return path
 
