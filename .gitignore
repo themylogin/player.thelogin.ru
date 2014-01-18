@@ -35,4 +35,5 @@ nosetests.xml
 .pydevproject
 
 # User Data
-player/data
+player/data/library/*
+player/data/library_revisions/*
