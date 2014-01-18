@@ -102,7 +102,7 @@ def file_size(request):
     path = file_path_for_serving(request)
 
     if file_can_be_transfered_directly(path):
-        size = os.path.getsize(path)
+        size = os.path.getsize(path.encode("utf-8"))
     else:
         convert_file = IncompleteFile(convert_file_path(request))
         if convert_file.is_completed():
@@ -165,7 +165,11 @@ def library(request):
     library_dir = os.path.join(DATA_DIR, "library")
 
     # {"dir1/dir2" : "0123456789abcdef0123456789abcdef (content of dir1/dir2/index.json.checksum)"}
-    client_directories = dict(map(lambda s: s.rsplit(" ", 1), filter(lambda s: s, gzip.GzipFile(fileobj=request.POST["library"].file, mode="r").read().split("\n"))))
+    client_library_revision = os.path.join(DATA_DIR, "library_revisions", "%s.json" % request.GET["revision"])
+    if os.path.exists(client_library_revision):
+        client_directories = json.load(open(client_library_revision))
+    else:
+        client_directories = {}
 
     new_files = []
     delete_directories = copy.deepcopy(client_directories)
@@ -189,6 +193,7 @@ def library(request):
             for new_file in new_files:
                 zip_file.write(os.path.join(library_dir, new_file), new_file)
             zip_file.writestr("delete_directories.txt", "\n".join(delete_directories.keys()))
+            zip_file.writestr("revision.txt", open(os.path.join(library_dir, "revision.txt")).read())
 
         response = FileResponse(os.path.abspath(f.name))
         response.headers["Content-Disposition"] = ("attachment; filename=library.zip")
@@ -343,6 +348,18 @@ def update_library(music_dir, library_dir):
         for directory in dirs:
             if os.path.join(rel_root, directory) not in dirs_with_content_encoded:
                 shutil.rmtree(os.path.join(root, directory))
+
+    revision_data = {}
+    for root, dirs, files in os.walk(library_dir, topdown=False):
+        rel_root = os.path.relpath(root, library_dir)
+        if rel_root == ".":
+            rel_root = ""
+
+        revision_data[rel_root] = open(os.path.join(root, "index.json.checksum")).read()
+    revision_data = json.dumps(revision_data)
+    revision = hashlib.md5(revision_data).hexdigest()
+    open(os.path.join(library_dir, "revision.txt"), "w").write(revision)
+    open(os.path.join(DATA_DIR, "library_revisions", "%s.json" % revision), "w").write(revision_data)
 
 @view_config(route_name="player_command", renderer="json")
 def player_command(request):
