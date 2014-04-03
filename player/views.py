@@ -20,8 +20,8 @@ import urlparse
 from webob.byterange import ContentRange
 from zipfile import ZipFile, ZIP_DEFLATED
 
-MUSIC_EXTENSIONS = ("flac", "mp3")
-IOS_MUSIC_EXTENSIONS = ("mp3")
+MUSIC_EXTENSIONS = ("flac", "m4a", "mp3")
+IOS_MUSIC_EXTENSIONS = ("m4a", "mp3")
 BITRATE = 256
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
@@ -74,7 +74,7 @@ def file(request):
                 while True:
                     code = subprocess.call([
                         "/usr/bin/avconv", "-i", path,
-                        "-acodec", "libmp3lame", "-ab", "%dk" % BITRATE, "-ar", "44100", "-f", "mp3",            
+                        "-acodec", "libmp3lame", "-ab", "%dk" % BITRATE, "-ar", "44100", "-f", "mp3",
                         "-y", f.path
                     ])
                     if code == 0:
@@ -119,13 +119,13 @@ def file_path_for_serving(request):
         raise HTTPForbidden()
     if not os.path.exists(path.encode("utf8")):
         raise HTTPNotFound()
-    return path
+    return path.encode("utf-8")
 
 def file_can_be_transfered_directly(path):
     return os.path.splitext(path)[1].lower()[1:] in IOS_MUSIC_EXTENSIONS
 
 def convert_file_path(request):
-    return os.path.join(request.registry.settings["tmp_dir"], request.GET["path"] + ".mp3")
+    return os.path.join(request.registry.settings["tmp_dir"], request.GET["path"] + ".mp3").encode("utf-8")
 
 class IncompleteFile(object):
     def __init__(self, path):
