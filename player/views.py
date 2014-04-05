@@ -72,11 +72,12 @@ def file(request):
         if not os.path.exists(f.path):
             def avconv_thread():
                 while True:
-                    code = subprocess.call([
-                        "/usr/bin/avconv", "-i", path,
-                        "-acodec", "libmp3lame", "-ab", "%dk" % BITRATE, "-ar", "44100", "-f", "mp3",
-                        "-y", f.path
-                    ])
+                    with open(f.path, "w") as fh:
+                        code = subprocess.call([
+                            "/usr/bin/avconv", "-i", path,
+                            "-acodec", "libmp3lame", "-ab", "%dk" % BITRATE, "-ar", "44100", "-f", "mp3",
+                            "-",
+                        ], stdout=fh)
                     if code == 0:
                         break
                 f.set_completed()
