@@ -58,6 +58,11 @@ Proper way:
 
 ## Usage Tips
 
+* Put this into your cron.hourly:
+
+        #!/bin/sh
+        curl http://.../update
+
 * Put this into your cron.daily:
 
         #!/bin/sh
