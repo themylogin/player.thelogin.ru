@@ -103,7 +103,7 @@ def file_size(request):
     path = file_path_for_serving(request)
 
     if file_can_be_transfered_directly(path):
-        size = os.path.getsize(path.encode("utf-8"))
+        size = os.path.getsize(path)
     else:
         convert_file = IncompleteFile(convert_file_path(request))
         if convert_file.is_completed():
