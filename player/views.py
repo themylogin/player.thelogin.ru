@@ -76,6 +76,7 @@ def file(request):
                         code = subprocess.call([
                             "/usr/bin/avconv", "-i", path,
                             "-acodec", "libmp3lame", "-ab", "%dk" % BITRATE, "-ar", "44100", "-f", "mp3",
+                            "-map", "0:0",
                             "-",
                         ], stdout=fh)
                     if code == 0:
