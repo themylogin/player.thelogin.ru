@@ -296,7 +296,7 @@ def update_library(music_dir, library_dir):
                     date = metadata.get("date", [""])[0]
                     if not album or not date:
                         for date_album in reversed(rel_root.decode("utf8", "ignore").split(os.sep)):
-                            match = re.match("(\d{4})(.+)", date_album)
+                            match = re.match("(\d{4}|\d{4}\.\d{2})(.+)", date_album)
                             if match:
                                 if not date:
                                     date = match.group(1)
