@@ -208,7 +208,7 @@ def update(request):
 
     def app_iter():
         t = 0
-        for rel_root in update_library(music_dir, library_dir):
+        for rel_root in update_library(music_dir, library_dir, request.GET.get("rebuild", "0") == "1"):
             if time.time() - t > 1:
                 yield "%s\n" % rel_root
                 t = time.time()
@@ -230,7 +230,7 @@ def encode_path(path):
 
     return os.sep.join(map(encode_path_component, path.decode("utf8", "ignore").split(os.sep)))
 
-def update_library(music_dir, library_dir):
+def update_library(music_dir, library_dir, rebuild=False):
     music_dir = os.path.abspath(music_dir)
     library_dir = os.path.abspath(library_dir)
 
@@ -272,7 +272,8 @@ def update_library(music_dir, library_dir):
                 mtime = int(os.path.getmtime(abs_filename))
                 size = os.path.getsize(abs_filename)
 
-                if (filename_decoded in index and
+                if (not rebuild and
+                    filename_decoded in index and
                     index[filename_decoded]["type"] == "file" and
                     index[filename_decoded]["mtime"] == mtime and
                     index[filename_decoded]["size"] == size):
@@ -291,6 +292,7 @@ def update_library(music_dir, library_dir):
                     artist = metadata.get("artist", [""])[0]
                     title = metadata.get("title", [os.path.splitext(filename_decoded)[0]])[0]
                     track = metadata.get("tracknumber", ["0"])[0].split("/")[0].rjust(2, "0")
+                    disc = int(metadata.get("discnumber", ["0"])[0].split("/")[0])
 
                     album = metadata.get("album", [""])[0]
                     date = metadata.get("date", [""])[0]
@@ -315,6 +317,7 @@ def update_library(music_dir, library_dir):
                         "date"      : date,
                         "title"     : title,
                         "track"     : track,
+                        "disc"      : disc,
                     }
 
         artists = set()
