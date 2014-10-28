@@ -292,7 +292,7 @@ def update_library(music_dir, library_dir, rebuild=False):
                     artist = metadata.get("artist", [""])[0]
                     title = metadata.get("title", [os.path.splitext(filename_decoded)[0]])[0]
                     track = metadata.get("tracknumber", ["0"])[0].split("/")[0].rjust(2, "0")
-                    disc = int(metadata.get("discnumber", ["0"])[0].split("/")[0])
+                    disc = int(metadata.get("discnumber", ["0"])[0].split("/")[0].rjust(1, "0"))
 
                     album = metadata.get("album", [""])[0]
                     date = metadata.get("date", [""])[0]
