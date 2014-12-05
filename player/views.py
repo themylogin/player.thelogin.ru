@@ -2,6 +2,7 @@ import copy
 import gzip
 import hashlib
 import json
+import logging
 import mpd
 import mutagen
 import mutagen.easyid3
@@ -9,8 +10,10 @@ from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
 from pyramid.response import FileResponse, Response
 from pyramid.view import view_config
 import os
+from PIL import Image
 import re
 import shutil
+from StringIO import StringIO
 import subprocess
 from tempfile import NamedTemporaryFile
 import threading
@@ -25,6 +28,8 @@ IOS_MUSIC_EXTENSIONS = ("m4a", "mp3")
 BITRATE = 256
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
+
+logger = logging.getLogger()
 
 @view_config(route_name="file")
 def file(request):
@@ -161,6 +166,32 @@ class IncompleteFile(object):
         if self.fh is not None:
             self.fh.close()
 
+@view_config(route_name="cover")
+def cover(request):
+    path = file_path_for_serving(request)
+
+    io = StringIO()
+    image = Image.open(path)
+    image.thumbnail((640, 640), Image.ANTIALIAS)
+    image.save(io, "JPEG")
+
+    return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
+
+@view_config(route_name="file_size")
+def file_size(request):
+    path = file_path_for_serving(request)
+
+    if file_can_be_transfered_directly(path):
+        size = os.path.getsize(path)
+    else:
+        convert_file = IncompleteFile(convert_file_path(request))
+        if convert_file.is_completed():
+            size = os.path.getsize(convert_file.path)
+        else:
+            size = -1
+
+    return Response(str(size))
+
 @view_config(route_name="library")
 def library(request):
     music_dir = request.registry.settings["music_dir"]
@@ -230,12 +261,68 @@ def encode_path(path):
 
     return os.sep.join(map(encode_path_component, path.decode("utf8", "ignore").split(os.sep)))
 
+
+def find_cover(directory, check_siblings=True):
+    images = []
+    directories_with_images = set()
+    for root, dirs, files in os.walk(directory):
+        stop = False
+        for filename in files:
+            extension = os.path.splitext(filename)[1].lower()[1:]
+            if extension in ("bmp", "gif", "jpg", "jpeg", "tif", "tiff"):
+                images.append(os.path.join(root, filename))
+
+                directories_with_images.add(root)
+                if len(directories_with_images) > 10:
+                    # Too many nested directories, do not search them
+                    images = filter(lambda image: os.path.split(image) == directory, images)
+                    stop = True
+                    break
+        if stop:
+            break
+
+    if not images:
+        parent_directory = os.path.normpath(os.path.join(directory, os.path.pardir))
+        if check_siblings and len(os.walk(parent_directory).next()[1]) < 5:
+            # This is "CD1" directory or something like that, it's cover can be in sibling "Covers" directory
+            return find_cover(parent_directory, False)
+        else:
+            return None
+
+    images_size = {}
+    for image in images:
+        try:
+            images_size[image] = Image.open(image).size
+        except IOError:
+            logger.exception("Error processing %s", image)
+
+    if not images_size:
+        return None
+
+    images_rating = {}
+    max_size = max(max(size) for size in images_size.values())
+    for image, size in images_size.iteritems():
+        rating = 0
+
+        if "front" in image.lower():
+            rating += 1000
+
+        rating += 100.0 * max(size) / max_size
+
+        rating += sorted(images_size.keys(), key=lambda i: i.lower()).index(image)
+
+        images_rating[image] = rating
+
+    return sorted(images_rating.keys(), key=lambda i: images_rating[i])[-1]
+
+
 def update_library(music_dir, library_dir, rebuild=False):
     music_dir = os.path.abspath(music_dir)
     library_dir = os.path.abspath(library_dir)
 
     dirs_with_content = set()
     dirs_with_content_encoded = set()
+    dirs_with_files = set()
     for root, dirs, files in os.walk(music_dir, topdown=False, followlinks=True):
         rel_root = os.path.relpath(root, music_dir)
         if rel_root == ".":
@@ -258,10 +345,24 @@ def update_library(music_dir, library_dir, rebuild=False):
             rel_dirname = os.path.join(rel_root, dirname)
             if rel_dirname in dirs_with_content:
                 dirname_decoded = dirname.decode("utf8", "ignore")
+                if (not rebuild and
+                        dirname_decoded in index and
+                        (index[dirname_decoded]["cover"] is None or
+                            os.path.exists(os.path.join(music_dir, index[dirname_decoded]["cover"])))):
+                    cover = index[dirname_decoded]["cover"]
+                else:
+                    if os.path.join(root, dirname) in dirs_with_files:
+                        cover = find_cover(os.path.join(root, dirname))
+                        if cover:
+                            cover = urllib.quote(os.path.relpath(cover, music_dir))
+                    else:
+                        cover = None
+
                 new_index[dirname_decoded] = {
                     "type"  : "directory",
                     "name"  : dirname_decoded,
                     "path"  : encode_path(rel_dirname),
+                    "cover" : cover,
                 }
 
         for filename in files:
@@ -306,6 +407,7 @@ def update_library(music_dir, library_dir, rebuild=False):
                                     album = match.group(2).strip().strip("-").strip()
                                 break
 
+                    dirs_with_files.add(root)
                     new_index[filename_decoded] = {
                         "type"      : "file",
                         "path"      : encode_path(rel_filename),
