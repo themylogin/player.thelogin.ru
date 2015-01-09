@@ -7,10 +7,14 @@ README = open(os.path.join(here, 'README.md')).read()
 CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 
 requires = [
-    'pyramid',
-    'pyramid_debugtoolbar',
-    'waitress',
-    'mutagen',
+    "beautifulsoup4",
+    "html2text",
+    "mutagen",
+    "svn+http://pygoogle.googlecode.com/svn/trunk/#egg=pygoogle",
+    "pyramid",
+    "pyramid_debugtoolbar",
+    "requests",
+    "waitress",
     ]
 
 setup(name='player',

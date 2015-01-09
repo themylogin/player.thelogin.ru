@@ -1,5 +1,6 @@
+# -*- coding=utf-8 -*-
+
 import copy
-import gzip
 import hashlib
 import json
 import logging
@@ -23,6 +24,8 @@ import urlparse
 from webob.byterange import ContentRange
 from zipfile import ZipFile, ZIP_DEFLATED
 
+from player.lyrics import get_lyrics
+
 MUSIC_EXTENSIONS = ("flac", "m4a", "mp3")
 IOS_MUSIC_EXTENSIONS = ("m4a", "mp3")
 BITRATE = 256
@@ -30,6 +33,7 @@ BITRATE = 256
 DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 logger = logging.getLogger()
+
 
 @view_config(route_name="file")
 def file(request):
@@ -104,6 +108,7 @@ def file(request):
         response.headers["X-Expected-Content-Length"] = str(expected_length)
     return response
 
+
 @view_config(route_name="file_size")
 def file_size(request):
     path = file_path_for_serving(request)
@@ -119,6 +124,7 @@ def file_size(request):
 
     return Response(str(size))
 
+
 def file_path_for_serving(request):
     music_dir = request.registry.settings["music_dir"]
     path = os.path.normpath(os.path.join(music_dir, request.GET["path"]))
@@ -128,11 +134,14 @@ def file_path_for_serving(request):
         raise HTTPNotFound()
     return path.encode("utf-8")
 
+
 def file_can_be_transfered_directly(path):
     return os.path.splitext(path)[1].lower()[1:] in IOS_MUSIC_EXTENSIONS
 
+
 def convert_file_path(request):
     return os.path.join(request.registry.settings["tmp_dir"], request.GET["path"] + ".mp3").encode("utf-8")
+
 
 class IncompleteFile(object):
     def __init__(self, path):
@@ -166,16 +175,6 @@ class IncompleteFile(object):
         if self.fh is not None:
             self.fh.close()
 
-@view_config(route_name="cover")
-def cover(request):
-    path = file_path_for_serving(request)
-
-    io = StringIO()
-    image = Image.open(path)
-    image.thumbnail((640, 640), Image.ANTIALIAS)
-    image.save(io, "JPEG")
-
-    return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
 
 @view_config(route_name="file_size")
 def file_size(request):
@@ -191,6 +190,38 @@ def file_size(request):
             size = -1
 
     return Response(str(size))
+
+
+@view_config(route_name="cover")
+def cover(request):
+    path = file_path_for_serving(request)
+
+    io = StringIO()
+    image = Image.open(path)
+    image.thumbnail((640, 640), Image.ANTIALIAS)
+    image.save(io, "JPEG")
+
+    return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
+
+
+@view_config(route_name="lyrics")
+def lyrics(request):
+    filename = os.path.join(DATA_DIR, "lyrics", request.GET["artist"].lower().encode("utf-8"),
+                            request.GET["title"].lower().encode("utf-8") + ".txt")
+    if os.path.exists(filename):
+        lyrics = open(filename, "r").read().decode("utf-8")
+    else:
+        lyrics = get_lyrics(request.GET["artist"], request.GET["title"])
+        if lyrics:
+            if not os.path.exists(os.path.dirname(filename)):
+                os.makedirs(os.path.dirname(filename))
+            open(filename, "w").write(lyrics.encode("utf-8"))
+
+    if lyrics:
+        return Response(lyrics, headerlist=[("Content-type", "text/plain")])
+    else:
+        return Response("")
+
 
 @view_config(route_name="library")
 def library(request):
@@ -232,6 +263,7 @@ def library(request):
         response.headers["Content-Disposition"] = ("attachment; filename=library.zip")
         return response
 
+
 @view_config(route_name="update")
 def update(request):
     music_dir = request.registry.settings["music_dir"]
@@ -247,6 +279,7 @@ def update(request):
     response = Response()
     response.app_iter = app_iter()
     return response
+
 
 def encode_path(path):
     def encode_path_component(path_component):
@@ -468,10 +501,12 @@ def update_library(music_dir, library_dir, rebuild=False):
     open(os.path.join(library_dir, "revision.txt"), "w").write(revision)
     open(os.path.join(DATA_DIR, "library_revisions", "%s.json" % revision), "w").write(revision_data)
 
+
 @view_config(route_name="player_command", renderer="json")
 def player_command(request):
     player = create_player(request.registry.settings["player"])
     return getattr(player, request.matchdict["command"])(**request.POST)
+
 
 def create_player(url):
     o = urlparse.urlparse(url)
@@ -480,6 +515,7 @@ def create_player(url):
         return MPD(o.hostname, o.port)
 
     return None
+
 
 class MPD(object):
     def __init__(self, hostname, port):
