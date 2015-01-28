@@ -4,7 +4,6 @@ import copy
 import hashlib
 import json
 import logging
-import mpd
 import mutagen
 import mutagen.easyid3
 from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
@@ -20,11 +19,11 @@ from tempfile import NamedTemporaryFile
 import threading
 import time
 import urllib
-import urlparse
-from webob.byterange import ContentRange
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from player.lyrics import get_lyrics
+from player.players import create_player
+
 
 MUSIC_EXTENSIONS = ("flac", "m4a", "mp3")
 IOS_MUSIC_EXTENSIONS = ("m4a", "mp3")
@@ -506,27 +505,3 @@ def update_library(music_dir, library_dir, rebuild=False):
 def player_command(request):
     player = create_player(request.registry.settings["player"])
     return getattr(player, request.matchdict["command"])(**request.POST)
-
-
-def create_player(url):
-    o = urlparse.urlparse(url)
-
-    if o.scheme == "mpd":
-        return MPD(o.hostname, o.port)
-
-    return None
-
-
-class MPD(object):
-    def __init__(self, hostname, port):
-        self.client = mpd.MPDClient()
-        self.client.connect(hostname, port)
-
-    def current_state(self, **kwargs):
-        playlistinfo = self.client.playlistinfo()
-        status = self.client.status()
-        return {
-            "playlist"  : [item["file"] for item in playlistinfo],
-            "position"  : int(status.get("song", -1)),
-            "elapsed"   : int(float(status.get("elapsed", -1))),
-        }

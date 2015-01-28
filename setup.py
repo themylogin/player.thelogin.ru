@@ -14,6 +14,7 @@ requires = [
     "pyramid",
     "pyramid_debugtoolbar",
     "requests",
+    "themyutils",
     "waitress",
     ]
 
@@ -37,6 +38,9 @@ setup(name='player',
       zip_safe=False,
       install_requires=requires,
       tests_require=requires,
+      dependency_links=[
+        "https://github.com/themylogin/themyutils/archive/master.zip#egg=themyutils",
+      ],
       test_suite="player",
       entry_points="""\
       [paste.app_factory]
