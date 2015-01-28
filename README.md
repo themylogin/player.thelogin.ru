@@ -33,8 +33,11 @@ Proper way:
         virtualenv = /home/themylogin/www/apps/virtualenv
         
         chdir = /home/themylogin/www/apps/player
-        paste = config:/home/themylogin/www/apps/player/development.ini
-        
+        paste = config:/home/themylogin/www/apps/player/production.ini
+
+        paste-logger
+        enable-threads
+
         logto = /var/log/uwsgi/player.log
 
 * nginx configuration:
