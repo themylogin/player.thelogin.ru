@@ -1,35 +1,25 @@
 # -*- coding=utf-8 -*-
 
 import copy
-import hashlib
 import json
 import logging
-import mutagen
-import mutagen.easyid3
 from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
 from pyramid.response import FileResponse, Response
 from pyramid.view import view_config
 import os
 from PIL import Image
 import re
-import shutil
 from StringIO import StringIO
 import subprocess
 from tempfile import NamedTemporaryFile
 import threading
 import time
-import urllib
 from zipfile import ZipFile, ZIP_DEFLATED
 
+from player.constants import *
+from player.library import update_library
 from player.lyrics import get_lyrics
 from player.players import create_player
-
-
-MUSIC_EXTENSIONS = ("flac", "m4a", "mp3")
-IOS_MUSIC_EXTENSIONS = ("m4a", "mp3")
-BITRATE = 256
-
-DATA_DIR = os.path.join(os.path.dirname(__file__), "data")
 
 logger = logging.getLogger()
 
@@ -224,7 +214,6 @@ def lyrics(request):
 
 @view_config(route_name="library")
 def library(request):
-    music_dir = request.registry.settings["music_dir"]
     library_dir = os.path.join(DATA_DIR, "library")
 
     # {"dir1/dir2" : "0123456789abcdef0123456789abcdef (content of dir1/dir2/index.json.checksum)"}
@@ -266,11 +255,10 @@ def library(request):
 @view_config(route_name="update")
 def update(request):
     music_dir = request.registry.settings["music_dir"]
-    library_dir = os.path.join(DATA_DIR, "library")
 
     def app_iter():
         t = 0
-        for rel_root in update_library(music_dir, library_dir, request.GET.get("rebuild", "0") == "1"):
+        for rel_root in update_library(music_dir, request.GET.get("rebuild", "0") == "1"):
             if time.time() - t > 1:
                 yield "%s\n" % rel_root
                 t = time.time()
@@ -278,227 +266,6 @@ def update(request):
     response = Response()
     response.app_iter = app_iter()
     return response
-
-
-def encode_path(path):
-    def encode_path_component(path_component):
-        try:
-            return path_component.encode("ascii").replace("\\", " ")
-        except UnicodeEncodeError:
-            root, ext = os.path.splitext(path_component)
-            try:
-                return hashlib.md5(root.encode("utf8")).hexdigest() + ext.encode("ascii")
-            except UnicodeEncodeError:
-                return hashlib.md5(path_component.encode("utf8")).hexdigest()
-
-    return os.sep.join(map(encode_path_component, path.decode("utf8", "ignore").split(os.sep)))
-
-
-def find_cover(directory, check_siblings=True):
-    images = []
-    directories_with_images = set()
-    for root, dirs, files in os.walk(directory):
-        stop = False
-        for filename in files:
-            extension = os.path.splitext(filename)[1].lower()[1:]
-            if extension in ("bmp", "gif", "jpg", "jpeg", "tif", "tiff"):
-                images.append(os.path.join(root, filename))
-
-                directories_with_images.add(root)
-                if len(directories_with_images) > 10:
-                    # Too many nested directories, do not search them
-                    images = filter(lambda image: os.path.split(image) == directory, images)
-                    stop = True
-                    break
-        if stop:
-            break
-
-    if not images:
-        parent_directory = os.path.normpath(os.path.join(directory, os.path.pardir))
-        if check_siblings and len(os.walk(parent_directory).next()[1]) < 5:
-            # This is "CD1" directory or something like that, it's cover can be in sibling "Covers" directory
-            return find_cover(parent_directory, False)
-        else:
-            return None
-
-    images_size = {}
-    for image in images:
-        try:
-            images_size[image] = Image.open(image).size
-        except IOError:
-            logger.exception("Error processing %s", image)
-
-    if not images_size:
-        return None
-
-    images_rating = {}
-    max_size = max(max(size) for size in images_size.values())
-    for image, size in images_size.iteritems():
-        rating = 0
-
-        if "front" in image.lower():
-            rating += 1000
-
-        rating += 100.0 * max(size) / max_size
-
-        rating += sorted(images_size.keys(), key=lambda i: i.lower()).index(image)
-
-        images_rating[image] = rating
-
-    return sorted(images_rating.keys(), key=lambda i: images_rating[i])[-1]
-
-
-def update_library(music_dir, library_dir, rebuild=False):
-    music_dir = os.path.abspath(music_dir)
-    library_dir = os.path.abspath(library_dir)
-
-    dirs_with_content = set()
-    dirs_with_content_encoded = set()
-    dirs_with_files = set()
-    for root, dirs, files in os.walk(music_dir, topdown=False, followlinks=True):
-        rel_root = os.path.relpath(root, music_dir)
-        if rel_root == ".":
-            rel_root = ""
-        yield rel_root
-
-        index_file = os.path.join(library_dir, encode_path(rel_root), "index.json")
-        checksum_file = os.path.join(library_dir, encode_path(rel_root), "index.json.checksum")
-
-        try:
-            index_json = open(index_file).read()
-            index = json.loads(index_json)
-        except (IOError, ValueError):
-            index_json = None
-            index = {}
-
-        new_index = {}
-
-        for dirname in dirs:
-            rel_dirname = os.path.join(rel_root, dirname)
-            if rel_dirname in dirs_with_content:
-                dirname_decoded = dirname.decode("utf8", "ignore")
-                if (not rebuild and
-                        dirname_decoded in index and
-                        (index[dirname_decoded]["cover"] is None or
-                            os.path.exists(os.path.join(music_dir, index[dirname_decoded]["cover"])))):
-                    cover = index[dirname_decoded]["cover"]
-                else:
-                    if os.path.join(root, dirname) in dirs_with_files:
-                        cover = find_cover(os.path.join(root, dirname))
-                        if cover:
-                            cover = urllib.quote(os.path.relpath(cover, music_dir))
-                    else:
-                        cover = None
-
-                new_index[dirname_decoded] = {
-                    "type"  : "directory",
-                    "name"  : dirname_decoded,
-                    "path"  : encode_path(rel_dirname),
-                    "cover" : cover,
-                }
-
-        for filename in files:
-            extension = os.path.splitext(filename)[1].lower()[1:]
-            if extension in MUSIC_EXTENSIONS:
-                filename_decoded = filename.decode("utf8", "ignore")
-                abs_filename = os.path.realpath(os.path.join(root, filename))
-                mtime = int(os.path.getmtime(abs_filename))
-                size = os.path.getsize(abs_filename)
-
-                if (not rebuild and
-                    filename_decoded in index and
-                    index[filename_decoded]["type"] == "file" and
-                    index[filename_decoded]["mtime"] == mtime and
-                    index[filename_decoded]["size"] == size):
-                    new_index[filename_decoded] = index[filename_decoded]
-                else:
-                    rel_filename = os.path.relpath(abs_filename, music_dir)
-
-                    try:
-                        if extension == "mp3":
-                            metadata = mutagen.easyid3.EasyID3(abs_filename)
-                        else:
-                            metadata = mutagen.File(abs_filename)
-                    except:
-                        metadata = {}
-
-                    artist = metadata.get("artist", [""])[0]
-                    title = metadata.get("title", [os.path.splitext(filename_decoded)[0]])[0]
-                    track = metadata.get("tracknumber", ["0"])[0].split("/")[0].rjust(2, "0")
-                    disc = metadata.get("discnumber", ["0"])[0].split("/")[0]
-
-                    album = metadata.get("album", [""])[0]
-                    date = metadata.get("date", [""])[0]
-                    if not album or not date:
-                        for date_album in reversed(rel_root.decode("utf8", "ignore").split(os.sep)):
-                            match = re.match("(\d{4}|\d{4}\.\d{2})(.+)", date_album)
-                            if match:
-                                if not date:
-                                    date = match.group(1)
-                                if not album:
-                                    album = match.group(2).strip().strip("-").strip()
-                                break
-
-                    dirs_with_files.add(root)
-                    new_index[filename_decoded] = {
-                        "type"      : "file",
-                        "path"      : encode_path(rel_filename),
-                        "url"       : urllib.quote(rel_filename),
-                        "mtime"     : mtime,
-                        "size"      : size,
-                        "artist"    : artist,
-                        "album"     : album,
-                        "date"      : date,
-                        "title"     : title,
-                        "track"     : track,
-                        "disc"      : disc,
-                    }
-
-        artists = set()
-        for key in new_index:
-            if new_index[key]["type"] == "file":
-                artists.add(new_index[key]["artist"])
-                if len(artists) > 1:
-                    break
-        if len(artists) > 1:
-            title_format = u"%(track)s - %(artist)s - %(title)s"
-        else:
-            title_format = u"%(track)s - %(title)s"
-        for key in new_index:
-            if new_index[key]["type"] == "file":
-                new_index[key]["name"] = title_format % new_index[key]
-
-        if new_index:
-            new_index_json = json.dumps(new_index, sort_keys=True)
-            if new_index_json != index_json:
-                if not os.path.exists(os.path.dirname(index_file)):
-                    os.makedirs(os.path.dirname(index_file))
-                open(index_file, "w+").write(new_index_json)
-                open(checksum_file, "w+").write(hashlib.md5(new_index_json).hexdigest())
-
-            dirs_with_content.add(rel_root)
-            dirs_with_content_encoded.add(encode_path(rel_root))
-
-    for root, dirs, files in os.walk(library_dir):
-        rel_root = os.path.relpath(root, library_dir)
-        if rel_root == ".":
-            rel_root = ""
-
-        for directory in dirs:
-            if os.path.join(rel_root, directory) not in dirs_with_content_encoded:
-                shutil.rmtree(os.path.join(root, directory))
-
-    revision_data = {}
-    for root, dirs, files in os.walk(library_dir, topdown=False):
-        rel_root = os.path.relpath(root, library_dir)
-        if rel_root == ".":
-            rel_root = ""
-
-        revision_data[rel_root] = open(os.path.join(root, "index.json.checksum")).read()
-    revision_data = json.dumps(revision_data)
-    revision = hashlib.md5(revision_data).hexdigest()
-    open(os.path.join(library_dir, "revision.txt"), "w").write(revision)
-    open(os.path.join(DATA_DIR, "library_revisions", "%s.json" % revision), "w").write(revision_data)
 
 
 @view_config(route_name="player_command", renderer="json")
