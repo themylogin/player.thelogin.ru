@@ -10,7 +10,7 @@ requires = [
     "beautifulsoup4",
     "html2text",
     "mutagen",
-    "svn+http://pygoogle.googlecode.com/svn/trunk/#egg=pygoogle",
+    "pygoogle",
     "pyramid",
     "pyramid_debugtoolbar",
     "requests",
@@ -40,10 +40,13 @@ setup(name='player',
       tests_require=requires,
       dependency_links=[
         "https://github.com/themylogin/themyutils/archive/master.zip#egg=themyutils",
+        "svn+http://pygoogle.googlecode.com/svn/trunk/#egg=pygoogle",
       ],
       test_suite="player",
       entry_points="""\
       [paste.app_factory]
       main = player:main
+      [console_scripts]
+      player_updates_manager = player.scripts:updates_manager
       """,
       )
