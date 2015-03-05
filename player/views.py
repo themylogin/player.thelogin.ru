@@ -202,7 +202,7 @@ def cover_for_file(request):
     cover = find_cover(directory)
     if not cover:
         music_dir = request.registry.settings["music_dir"]
-        if download_cover(music_dir, os.path.relpath(directory, music_dir)):
+        if download_cover(music_dir, os.path.relpath(directory, music_dir), (640, 640)):
             cover = find_cover(directory)
 
     if cover:

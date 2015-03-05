@@ -10,10 +10,13 @@ requires = [
     "beautifulsoup4",
     "html2text",
     "mutagen",
+    "numpy",
+    "PIL",
     "pygoogle",
     "pyramid",
     "pyramid_debugtoolbar",
     "requests",
+    "scikit-image",
     "themyutils",
     "waitress",
     ]
