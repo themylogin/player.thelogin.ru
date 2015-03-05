@@ -4,6 +4,8 @@ from __future__ import absolute_import, division, unicode_literals
 import logging
 import os
 from PIL import Image
+import requests
+from StringIO import StringIO
 
 logger = logging.getLogger(__name__)
 
@@ -60,3 +62,36 @@ def find_cover(directory, check_siblings=True):
         images_rating[image] = rating
 
     return sorted(images_rating.keys(), key=lambda i: images_rating[i])[-1]
+
+
+def download_cover(music_dir, directory):
+    pieces = directory.split("/")
+    if pieces[0] in ["Drum&Bass", "Rap", "Rock", "Rave", "Trance"]:
+        pieces = pieces[2:]
+    else:
+        pieces = pieces[1:]
+
+    try:
+        r = requests.get("https://ajax.googleapis.com/ajax/services/search/images",
+                         params={"v": "1.0",
+                                 "q": " ".join(pieces) + " cover",
+                                 "imgsz": "xxlarge"},
+                         headers={"Referer": "http://player.thelogin.ru"}).json()
+    except:
+        logger.debug("Unable to query google for %s cover", directory, exc_info=True)
+        return False
+
+    for result in r["responseData"]["results"]:
+        try:
+            input = StringIO(requests.get(result["url"]).content)
+            output = StringIO()
+            image = Image.open(input)
+            image.save(output, "JPEG")
+            with open(os.path.join(music_dir, directory, "cover.jpg"), "w") as f:
+                f.write(output.getvalue())
+                logger.info("Downloaded cover for %s", directory)
+            return True
+        except:
+            logger.debug("Unable to download %s cover", result["url"], exc_info=True)
+
+    return False

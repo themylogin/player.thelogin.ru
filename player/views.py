@@ -17,6 +17,7 @@ import time
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from player.constants import *
+from player.cover import find_cover, download_cover
 from player.library import update_library
 from player.lyrics import get_lyrics
 from player.players import create_player
@@ -191,6 +192,26 @@ def cover(request):
     image.save(io, "JPEG")
 
     return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
+
+
+@view_config(route_name="cover_for_file")
+def cover_for_file(request):
+    path = file_path_for_serving(request)
+    directory = os.path.dirname(path)
+
+    cover = find_cover(directory)
+    if not cover:
+        music_dir = request.registry.settings["music_dir"]
+        if download_cover(music_dir, os.path.relpath(directory, music_dir)):
+            cover = find_cover(directory)
+
+    if cover:
+        io = StringIO()
+        image = Image.open(cover)
+        image.save(io, "JPEG")
+        return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
+    else:
+        raise HTTPNotFound()
 
 
 @view_config(route_name="lyrics")
