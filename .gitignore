@@ -40,3 +40,4 @@ nosetests.xml
 # User Data
 player/data/library/*
 player/data/library_revisions/*
+player/data/lyrics
