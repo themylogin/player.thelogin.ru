@@ -12,7 +12,6 @@ requires = [
     "mutagen",
     "numpy",
     "PIL",
-    "pygoogle",
     "pyramid",
     "pyramid_debugtoolbar",
     "requests",

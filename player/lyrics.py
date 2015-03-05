@@ -4,7 +4,6 @@ from __future__ import absolute_import, division, unicode_literals
 from bs4 import BeautifulSoup
 import html2text
 import logging
-from pygoogle import pygoogle
 import re
 import requests
 import urlparse
@@ -16,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 def get_lyrics(artist, title):
-    google = pygoogle(("%s %s lyrics" % (artist, title)).encode("utf-8"))
-    google.pages = 2
-    for url in google.get_urls():
+    r = requests.get("https://www.google.com/search?oe=utf8&ie=utf8&source=uds&start=0&hl=ru&gws_rd=ssl",
+                     params={"q": ("%s %s lyrics" % (artist, title)).encode("utf-8")})
+    for a in BeautifulSoup(r.text).select("h3 a"):
+        url = dict(urlparse.parse_qsl(urlparse.urlparse(a["href"]).query))["q"]
         logging.debug("Found %s", url)
         host = urlparse.urlparse(url).netloc
         for fetcher in fetchers:
@@ -48,7 +48,13 @@ class LyricsFetcher(object):
         html = requests.get(url, headers={
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36",
         }).text
-        return self.h.handle(self.fetch_from_html(html)).strip()
+        text = self.h.handle(self.fetch_from_html(html)).strip()
+
+        text = text.replace("\r\n", "\n")
+        if text.count("\n\n") > len(text.split("\n")) * 0.4:
+            text = text.replace("\n\n", "\n")
+
+        return text
 
     def fetch_from_html(self, html):
         raise NotImplementedError
