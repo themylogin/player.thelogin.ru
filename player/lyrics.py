@@ -51,7 +51,7 @@ class LyricsFetcher(object):
         text = self.h.handle(self.fetch_from_html(html)).strip()
 
         text = text.replace("\r\n", "\n")
-        if text.count("\n\n") > len(text.split("\n")) * 0.4:
+        if text.count("\n\n") > len(text.split("\n")) * 0.25:
             text = text.replace("\n\n", "\n")
 
         return text
@@ -75,7 +75,11 @@ class SoupSimpleLyricsFetcher(SoupLyricsFetcher):
     def fetch_from_soup(self, soup):
         d = soup.find(self.tag, **self.attrs)
         if d:
-            return unicode(d)
+            d = unicode(d)
+            return self.process_fetched(d)
+
+    def process_fetched(self, d):
+        return d
 
 
 @fetcher("azlyrics.com")
@@ -90,6 +94,9 @@ class AzLyrics(LyricsFetcher):
 @fetcher("songmeanings.com")
 class SongMeanings(SoupSimpleLyricsFetcher):
     attrs = {"class": "lyric-box"}
+
+    def process_fetched(self, d):
+        return re.sub("<a(.*?)</a>", "", d)
 
 
 @fetcher("genius.com")
