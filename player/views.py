@@ -208,10 +208,11 @@ def cover_for_file(request):
     if cover:
         io = StringIO()
         image = Image.open(cover)
-        image.save(io, "JPEG")
-        return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
     else:
-        raise HTTPNotFound()
+        io = StringIO()
+        image = Image.open(os.path.join(DATA_DIR, "default-cover.png"))
+    image.save(io, "JPEG")
+    return Response(io.getvalue(), headerlist=[("Content-Type", "image/jpeg")])
 
 
 @view_config(route_name="lyrics")
