@@ -73,13 +73,16 @@ class SoupSimpleLyricsFetcher(SoupLyricsFetcher):
     attrs = {}
 
     def fetch_from_soup(self, soup):
-        d = soup.find(self.tag, **self.attrs)
-        if d:
-            d = unicode(d)
-            return self.process_fetched(d)
+        result = soup.find(self.tag, **self.attrs)
+        if result:
+            self.process_soup(result)
+            return self.process_html(unicode(result))
 
-    def process_fetched(self, d):
-        return d
+    def process_soup(self, result):
+        return result
+
+    def process_html(self, result):
+        return result
 
 
 @fetcher("azlyrics.com")
@@ -95,8 +98,8 @@ class AzLyrics(LyricsFetcher):
 class SongMeanings(SoupSimpleLyricsFetcher):
     attrs = {"class": "lyric-box"}
 
-    def process_fetched(self, d):
-        return re.sub("<a(.*?)</a>", "", d)
+    def process_html(self, result):
+        return re.sub("<a(.*?)</a>", "", result)
 
 
 @fetcher("genius.com")
@@ -112,3 +115,8 @@ class LyricsFreak(SoupSimpleLyricsFetcher):
 @fetcher("lyricsmania.com")
 class LyricsMania(SoupSimpleLyricsFetcher):
     attrs = {"class": "lyrics-body"}
+
+    def process_soup(self, result):
+        for tag in ["div", "strong"]:
+            for trash in result.findAll(tag):
+                trash.extract()
