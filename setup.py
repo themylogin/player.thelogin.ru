@@ -16,6 +16,7 @@ requires = [
     "pyramid_debugtoolbar",
     "requests",
     "scikit-image",
+    "sqlalchemy",
     "themyutils",
     "waitress",
     ]

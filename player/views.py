@@ -18,6 +18,7 @@ from zipfile import ZipFile, ZIP_DEFLATED
 
 from player.constants import *
 from player.cover import find_cover, download_cover
+from player.db import *
 from player.library import update_library
 from player.lyrics import get_lyrics
 from player.players import create_player
@@ -217,21 +218,20 @@ def cover_for_file(request):
 
 @view_config(route_name="lyrics")
 def lyrics(request):
-    filename = os.path.join(DATA_DIR, "lyrics", request.GET["artist"].lower().encode("utf-8"),
-                            request.GET["title"].lower().encode("utf-8") + ".txt")
-    if os.path.exists(filename):
-        lyrics = open(filename, "r").read().decode("utf-8")
-    else:
-        lyrics = get_lyrics(request.GET["artist"], request.GET["title"])
-        if lyrics:
-            if not os.path.exists(os.path.dirname(filename)):
-                os.makedirs(os.path.dirname(filename))
-            open(filename, "w").write(lyrics.encode("utf-8"))
+    l = request.db.query(Lyrics).filter(Lyrics.artist == request.GET["artist"],
+                                        Lyrics.title == request.GET["title"]).first()
+    if l is None:
+        ll = get_lyrics(request.GET["artist"], request.GET["title"])
+        l = Lyrics()
+        l.artist = request.GET["artist"]
+        l.title = request.GET['title']
+        if ll:
+            l.provider = ll.provider
+            l.lyrics = ll.text
+        request.db.add(l)
+        request.db.commit()
 
-    if lyrics:
-        return Response(lyrics, headerlist=[("Content-type", "text/plain")])
-    else:
-        return Response("")
+    return Response(l.lyrics if l.lyrics else "", headerlist=[("Content-type", "text/plain")])
 
 
 @view_config(route_name="library")

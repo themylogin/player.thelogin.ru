@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, unicode_literals
 
 from bs4 import BeautifulSoup
+from collections import namedtuple
 import html2text
 import logging
 import re
@@ -12,6 +13,7 @@ __all__ = [b"get_lyrics"]
 
 fetchers = []
 logger = logging.getLogger(__name__)
+Lyrics = namedtuple("Lyrics", ["provider", "text"])
 
 
 def get_lyrics(artist, title):
@@ -26,7 +28,7 @@ def get_lyrics(artist, title):
                 try:
                     lyrics = fetcher["fetcher"].fetch(url)
                     if lyrics:
-                        return lyrics
+                        return Lyrics(fetcher["fetcher"].__class__.__name__, lyrics)
                 except Exception:
                     logger.exception("Error fetching lyrics from %s", url)
 
