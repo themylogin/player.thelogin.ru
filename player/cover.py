@@ -57,6 +57,8 @@ def find_cover(directory, check_siblings=True):
         rating = 0
 
         if "front" in image.lower():
+            rating += 10000
+        if "folder" in image.lower():
             rating += 1000
 
         rating += 100.0 * max(size) / max_size
