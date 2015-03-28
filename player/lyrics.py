@@ -17,20 +17,23 @@ Lyrics = namedtuple("Lyrics", ["provider", "text"])
 
 
 def get_lyrics(artist, title):
-    r = requests.get("https://www.google.com/search?oe=utf8&ie=utf8&source=uds&start=0&hl=ru&gws_rd=ssl",
-                     params={"q": ("%s %s lyrics" % (artist, title)).encode("utf-8")})
-    for a in BeautifulSoup(r.text).select("h3 a"):
-        url = dict(urlparse.parse_qsl(urlparse.urlparse(a["href"]).query))["q"]
-        logging.debug("Found %s", url)
-        host = urlparse.urlparse(url).netloc
-        for fetcher in fetchers:
-            if fetcher["host"] in host:
-                try:
-                    lyrics = fetcher["fetcher"].fetch(url)
-                    if lyrics:
-                        return Lyrics(fetcher["fetcher"].__class__.__name__, lyrics)
-                except Exception:
-                    logger.exception("Error fetching lyrics from %s", url)
+    try:
+        r = requests.get("https://www.google.com/search?oe=utf8&ie=utf8&source=uds&start=0&hl=ru&gws_rd=ssl",
+                         params={"q": ("%s %s lyrics" % (artist, title)).encode("utf-8")})
+        for a in BeautifulSoup(r.text).select("h3 a"):
+            url = dict(urlparse.parse_qsl(urlparse.urlparse(a["href"]).query))["q"]
+            logging.debug("Found %s", url)
+            host = urlparse.urlparse(url).netloc
+            for fetcher in fetchers:
+                if fetcher["host"] in host:
+                    try:
+                        lyrics = fetcher["fetcher"].fetch(url)
+                        if lyrics:
+                            return Lyrics(fetcher["fetcher"].__class__.__name__, lyrics)
+                    except Exception:
+                        logger.exception("Error fetching lyrics from %s", url)
+    except Exception:
+        logger.exception("Error querying %s %s lyrics" % (artist, title))
 
 
 def fetcher(host):
@@ -122,3 +125,9 @@ class LyricsMania(SoupSimpleLyricsFetcher):
         for tag in ["div", "strong"]:
             for trash in result.findAll(tag):
                 trash.extract()
+
+
+@fetcher("songlyrics.com")
+class SongLyrics(SoupSimpleLyricsFetcher):
+    tag = "p"
+    attrs = {"id": "songLyricsDiv"}
