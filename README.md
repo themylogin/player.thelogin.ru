@@ -49,6 +49,13 @@ Proper way:
 	        location / {
 		        try_files $uri @player;
 	        }
+	        
+	        location /player/become_superseeded {
+		        try_files $uri @player;
+		        allow 192.168.0.3;
+		        allow 192.168.0.7;
+		        deny all;
+	        }
         
 	        location @player {
 		        include uwsgi_params;
