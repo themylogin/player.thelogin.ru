@@ -21,7 +21,7 @@ def find_cover(directory, check_siblings=True):
         stop = False
         for filename in files:
             extension = os.path.splitext(filename)[1].lower()[1:]
-            if extension in ("bmp", "gif", "jpg", "jpeg", "tif", "tiff"):
+            if extension in (b"bmp", b"gif", b"jpg", b"jpeg", b"tif", b"tiff"):
                 images.append(os.path.join(root, filename))
 
                 directories_with_images.add(root)
@@ -56,9 +56,9 @@ def find_cover(directory, check_siblings=True):
     for image, size in images_size.iteritems():
         rating = 0
 
-        if "front" in image.lower():
+        if b"front" in image.lower():
             rating += 10000
-        if "folder" in image.lower():
+        if b"folder" in image.lower():
             rating += 1000
 
         rating += 100.0 * max(size) / max_size
