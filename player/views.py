@@ -121,9 +121,9 @@ def file_path_for_serving(request):
     path = os.path.normpath(os.path.join(music_dir, request.GET["path"]))
     if os.path.commonprefix([music_dir, path]) != music_dir:
         raise HTTPForbidden()
-    if not os.path.exists(path.encode("utf8")):
+    if not os.path.exists(path):
         raise HTTPNotFound()
-    return path.encode("utf-8")
+    return path
 
 
 def file_can_be_transfered_directly(path):
@@ -131,7 +131,7 @@ def file_can_be_transfered_directly(path):
 
 
 def convert_file_path(request):
-    return os.path.join(request.registry.settings["tmp_dir"], request.GET["path"] + ".mp3").encode("utf-8")
+    return os.path.join(request.registry.settings["tmp_dir"], request.GET["path"] + ".mp3")
 
 
 class IncompleteFile(object):

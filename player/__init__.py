@@ -2,8 +2,11 @@
 from __future__ import absolute_import, division, unicode_literals
 
 from pyramid.config import Configurator
+from pyramid.request import Request
 from sqlalchemy import engine_from_config
 from sqlalchemy.orm import sessionmaker
+import urlparse
+from webob.multidict import GetDict
 
 from player.db import initialize_sql
 
@@ -23,6 +26,16 @@ def db(request):
     return session
 
 
+def request_factory(environ):
+    request = Request(environ)
+    request.environ["webob._parsed_query_vars"] = (GetDict(urlparse.parse_qsl(request.query_string,
+                                                                              keep_blank_values=True,
+                                                                              strict_parsing=False),
+                                                           request.environ),
+                                                   request.query_string)
+    return request
+
+
 def main(global_config, **settings):
     config = Configurator(settings=settings)
 
@@ -40,5 +53,7 @@ def main(global_config, **settings):
     initialize_sql(engine)
     config.registry.dbmaker = sessionmaker(bind=engine)
     config.add_request_method(db, reify=True)
+
+    config.set_request_factory(request_factory)
 
     return config.make_wsgi_app()
