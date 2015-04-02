@@ -9,9 +9,11 @@ CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
 requires = [
     "beautifulsoup4",
     "html2text",
+    "python-mpd2",
     "mutagen",
     "numpy",
-    "PIL",
+    "pillow",
+    "pyinotify",
     "pyramid",
     "pyramid_debugtoolbar",
     "requests",
