@@ -131,3 +131,9 @@ class LyricsMania(SoupSimpleLyricsFetcher):
 class SongLyrics(SoupSimpleLyricsFetcher):
     tag = "p"
     attrs = {"id": "songLyricsDiv"}
+
+    def process_html(self, result):
+        if "We do not have the lyrics for " in result:
+            return None
+
+        return result
