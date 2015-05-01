@@ -119,7 +119,7 @@ def update_library(music_dir, rebuild=False):
                         "title"     : title,
                         "track"     : track,
                         "disc"      : disc,
-                        "duration"  : get_duration(abs_filename),
+                        "duration"  : get_duration(abs_filename) or 0,
                     }
 
         artists = set()
