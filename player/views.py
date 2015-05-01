@@ -22,6 +22,7 @@ from player.db import *
 from player.library import update_library
 from player.lyrics import get_lyrics
 from player.players import create_player
+from player.utils import get_duration
 
 logger = logging.getLogger()
 
@@ -60,12 +61,9 @@ def file(request):
         if not os.path.exists(d):
             os.makedirs(d)
 
-        stdout, stderr = subprocess.Popen(["/usr/bin/avconv", "-i", path], stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
-        m_duration = re.search("Duration: ([0-9:.]+),", stderr)
-        if m_duration:
-            [h, m, s] = m_duration.group(1).split(":")
-            [s, ms] = s.split(".")
-            expected_length = ((int(h) * 3600 + int(m) * 60 + int(s)) * 1000 + int(ms) * 10) * (BITRATE * 1024) / 8 / 1000
+        duration = get_duration(path)
+        if duration:
+            expected_length = int(duration * (BITRATE * 1024) / 8)
         else:
             expected_length = None
 

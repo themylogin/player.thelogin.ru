@@ -12,6 +12,7 @@ import urllib
 
 from player.constants import *
 from player.cover import find_cover
+from player.utils import get_duration
 
 
 def update_library(music_dir, rebuild=False):
@@ -118,6 +119,7 @@ def update_library(music_dir, rebuild=False):
                         "title"     : title,
                         "track"     : track,
                         "disc"      : disc,
+                        "duration"  : get_duration(abs_filename),
                     }
 
         artists = set()
