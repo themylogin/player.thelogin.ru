@@ -1,7 +1,7 @@
 # -*- coding=utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals
 
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, Tag
 from collections import namedtuple
 import html2text
 import logging
@@ -13,7 +13,7 @@ __all__ = [b"get_lyrics"]
 
 fetchers = []
 logger = logging.getLogger(__name__)
-Lyrics = namedtuple("Lyrics", ["provider", "text"])
+Lyrics = namedtuple("Lyrics", ["url", "html", "provider", "text"])
 
 
 def get_lyrics(artist, title):
@@ -27,9 +27,13 @@ def get_lyrics(artist, title):
             for fetcher in fetchers:
                 if fetcher["host"] in host:
                     try:
-                        lyrics = fetcher["fetcher"].fetch(url)
+                        html = requests.get(url, headers={
+                            "User-Agent": """Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) """
+                                          """Chrome/38.0.2125.104 Safari/537.36""",
+                        }).text
+                        lyrics = fetcher["fetcher"].fetch(html)
                         if lyrics:
-                            return Lyrics(fetcher["fetcher"].__class__.__name__, lyrics)
+                            return Lyrics(url, html, fetcher["fetcher"].__class__.__name__, lyrics)
                     except Exception:
                         logger.exception("Error fetching lyrics from %s", url)
     except Exception:
@@ -49,10 +53,7 @@ class LyricsFetcher(object):
         self.h = html2text.HTML2Text()
         self.h.ignore_links = True
 
-    def fetch(self, url):
-        html = requests.get(url, headers={
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/38.0.2125.104 Safari/537.36",
-        }).text
+    def fetch(self, html):
         text = self.h.handle(self.fetch_from_html(html)).strip()
 
         text = text.replace("\r\n", "\n")
@@ -91,12 +92,14 @@ class SoupSimpleLyricsFetcher(SoupLyricsFetcher):
 
 
 @fetcher("azlyrics.com")
-class AzLyrics(LyricsFetcher):
-    def fetch_from_html(self, html):
-        m = re.search("%s(.+)%s" % (re.escape("<!-- start of lyrics -->"),
-                                    re.escape("<!-- end of lyrics -->")), html, flags=re.DOTALL)
-        if m:
-            return m.group(1)
+class AzLyrics(SoupLyricsFetcher):
+    def fetch_from_soup(self, soup):
+        lyricsh = soup.find("div", class_="ringtone")
+        while lyricsh:
+            if isinstance(lyricsh, Tag) and lyricsh.name == "div":
+                return unicode(lyricsh)
+
+            lyricsh = lyricsh.next_element
 
 
 @fetcher("songmeanings.com")

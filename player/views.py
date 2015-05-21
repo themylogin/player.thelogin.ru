@@ -1,6 +1,7 @@
 # -*- coding=utf-8 -*-
 
 import copy
+from datetime import datetime, timedelta
 import json
 import logging
 from pyramid.httpexceptions import HTTPForbidden, HTTPNotFound
@@ -218,18 +219,24 @@ def cover_for_file(request):
 def lyrics(request):
     l = request.db.query(Lyrics).filter(Lyrics.artist == request.GET["artist"],
                                         Lyrics.title == request.GET["title"]).first()
+    if l is not None and l.lyrics is None and l.datetime < datetime.now() - timedelta(days=7):
+        request.db.delete(l)
+        l = None
     if l is None:
         ll = get_lyrics(request.GET["artist"], request.GET["title"])
         l = Lyrics()
+        l.datetime = datetime.now()
         l.artist = request.GET["artist"]
         l.title = request.GET['title']
         if ll:
+            l.url = ll.url
+            l.html = ll.html
             l.provider = ll.provider
             l.lyrics = ll.text
         request.db.add(l)
         request.db.commit()
 
-    return Response(l.lyrics if l.lyrics else "", headerlist=[("Content-type", "text/plain")])
+    return Response(l.lyrics if l.lyrics else "", headerlist=[("Content-type", "text/plain; charset=utf-8")])
 
 
 @view_config(route_name="library")
