@@ -54,13 +54,16 @@ class LyricsFetcher(object):
         self.h.ignore_links = True
 
     def fetch(self, html):
-        text = self.h.handle(self.fetch_from_html(html)).strip()
+        lyrics_html = self.fetch_from_html(html)
+        if lyrics_html:
+            text = self.h.handle(lyrics_html).strip()
 
-        text = text.replace("\r\n", "\n")
-        if text.count("\n\n") > len(text.split("\n")) * 0.25:
-            text = text.replace("\n\n", "\n")
+            if re.sub("\W", "", text, flags=re.UNICODE).lower().replace("instrumental", "") != "":
+                text = text.replace("\r\n", "\n")
+                if text.count("\n\n") > len(text.split("\n")) * 0.25:
+                    text = text.replace("\n\n", "\n")
 
-        return text
+                return text
 
     def fetch_from_html(self, html):
         raise NotImplementedError
@@ -127,6 +130,9 @@ class LyricsMania(SoupSimpleLyricsFetcher):
     def process_soup(self, result):
         for tag in ["div", "strong"]:
             for trash in result.findAll(tag):
+                if trash.get("class") and set(trash.get("class")).intersection({"p402_premium"}):
+                    continue
+
                 trash.extract()
 
 
