@@ -7,7 +7,7 @@ from sqlalchemy.ext.declarative import declarative_base
 
 logger = logging.getLogger(__name__)
 
-__all__ = [b"Lyrics"]
+__all__ = [b"initialize_sql", b"Lyrics"]
 
 Base = declarative_base()
 

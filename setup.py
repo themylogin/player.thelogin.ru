@@ -53,5 +53,6 @@ setup(name='player',
       main = player:main
       [console_scripts]
       player_updates_manager = player.scripts:updates_manager
+      player_rebuild_lyrics = player.scripts:rebuild_lyrics
       """,
       )
