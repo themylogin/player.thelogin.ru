@@ -10,6 +10,7 @@ import requests
 from skimage.measure import structural_similarity as ssim
 from StringIO import StringIO
 
+from themyutils.requests import chrome
 
 logger = logging.getLogger(__name__)
 
@@ -100,9 +101,11 @@ def download_cover(music_dir, directory, min_size):
 
 def _query_cover(q, **kwargs):
     try:
-        return requests.get("https://ajax.googleapis.com/ajax/services/search/images",
-                            params=dict(v="1.0", q=q, **kwargs),
-                            headers={"Referer": "http://player.thelogin.ru"}).json()["responseData"]["results"]
+        results = requests.get("https://ajax.googleapis.com/ajax/services/search/images",
+                               params=dict(v="1.0", q=q, **kwargs),
+                               headers={"Referer": "http://player.thelogin.ru"}).json()["responseData"]["results"]
+        logger.info("For query=%r, kwargs=%r got covers=%r", q, kwargs, results)
+        return results
     except:
         logger.debug("Unable to query google for %s", q, exc_info=True)
         return []
@@ -113,7 +116,7 @@ def _cover_size_ok(cover, min_size):
 
 
 def _cover_io(cover):
-    return StringIO(requests.get(cover["url"]).content)
+    return StringIO(requests.get(cover["url"], headers={"User-Agent": chrome}).content)
 
 
 def _find_bigger_cover_io(cover_io, covers, min_size):

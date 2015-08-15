@@ -9,6 +9,8 @@ import re
 import requests
 import urlparse
 
+from themyutils.requests import chrome
+
 __all__ = [b"get_lyrics"]
 
 fetchers = []
@@ -27,10 +29,7 @@ def get_lyrics(artist, title):
             for fetcher in fetchers:
                 if fetcher["host"] in host:
                     try:
-                        html = requests.get(url, headers={
-                            "User-Agent": """Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) """
-                                          """Chrome/38.0.2125.104 Safari/537.36""",
-                        }).text
+                        html = requests.get(url, headers={"User-Agent": chrome}).text
                         lyrics = fetcher["fetcher"].fetch(html)
                         if lyrics:
                             return Lyrics(url, html, fetcher["fetcher"].__class__.__name__, lyrics)
