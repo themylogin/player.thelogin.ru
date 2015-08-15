@@ -65,6 +65,68 @@ Proper way:
 		        uwsgi_buffering off;
 	        }
         }
+        
+Or, alternatively, if you need logging and it does not work for you (you see ```ImportError: No module named script.util.logging_config``` in uwsgi log), you can use this supervisord configuration:
+
+	[program:player_pserve]
+	user=themylogin
+	group=themylogin
+	directory=/home/themylogin
+	environment=HOME="/home/themylogin"
+	numprocs=5
+	numprocs_start=0
+	command=/home/themylogin/virtualenv/stable/bin/pserve /home/themylogin/apps/player/production.ini http_port=5673%(process_num)d
+	process_name=%(program_name)s-%(process_num)d
+	autostart=true
+	autorestart=true
+	redirect_stderr=true
+	
+and this nginx configuration:
+
+	server {
+		root /home/themylogin/www/apps/player/player/static;
+		server_name player.thelogin.ru;
+	
+		location / {
+			try_files $uri @player;
+		}
+	
+		location /player/become_superseeded {
+			try_files $uri @player;
+			allow 192.168.0.3;
+			allow 192.168.0.7;
+			deny all;
+		}
+	
+		location @player {
+	        proxy_buffering off;
+	        proxy_read_timeout 3600s;
+			proxy_pass http://player_pserve;
+	
+			add_header Access-Control-Allow-Methods "GET, OPTIONS";
+			add_header Access-Control-Allow-Origin "*";
+		}
+	}
+	
+	upstream player_pserve {
+		server 127.0.0.1:56730;
+		server 127.0.0.1:56731;
+		server 127.0.0.1:56732;
+		server 127.0.0.1:56733;
+		server 127.0.0.1:56734;
+	}
+
+You may also want to enable library (and MPD!) auto-update:
+
+	[program:player_updates_manager]
+	user=themylogin
+	group=themylogin
+	directory=/home/themylogin
+	environment=HOME="/home/themylogin"
+	command=/home/themylogin/virtualenv/stable/bin/player_updates_manager /home/themylogin/apps/player/production.ini
+	autostart=true
+	autorestart=true
+	redirect_stderr=true
 
 ## Usage Tips
 
