@@ -168,6 +168,10 @@ def update_library(music_dir, rebuild=False):
     open(os.path.join(library_dir, b"revision.txt"), "w").write(revision)
     open(os.path.join(DATA_DIR, b"library_revisions", b"%s.json" % revision), "w").write(revision_data)
 
+    search_index = []
+    build_search_index(search_index, library_dir)
+    open(os.path.join(library_dir, b"search.json"), "w").write(json.dumps(search_index))
+
 
 def encode_path(path):
     def encode_path_component(path_component):
@@ -181,6 +185,32 @@ def encode_path(path):
                 return hashlib.md5(path_component.encode("utf8")).hexdigest()
 
     return os.sep.join(map(encode_path_component, path.decode("utf8", "ignore").split(os.sep)))
+
+
+def build_search_index(search_index, library_root, root=None):
+    if root is None:
+        root = library_root
+
+    root_index_path = os.path.join(root, b"index.json")
+    if not os.path.exists(root_index_path):
+        return
+
+    for item in json.loads(open(root_index_path).read()).values():
+        if item["type"] == "directory":
+            search_index.append({"key":  search_index_key(item["name"]),
+                                 "item": item})
+            build_search_index(search_index, library_root, os.path.join(library_root, item["path"]))
+
+
+def search_index_key(name):
+    key = name
+
+    key = re.sub(r"[0-9\-\.\(\)\[\]]+ ", "", key)
+    key = re.sub(r"[\W]+", "", key, flags=re.UNICODE)
+
+    key = key.lower().strip()
+
+    return key
 
 
 class LibraryUpdater(object):

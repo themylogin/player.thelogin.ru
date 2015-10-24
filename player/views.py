@@ -273,6 +273,7 @@ def library(request):
                 zip_file.write(os.path.join(library_dir, new_file), new_file)
             zip_file.writestr("delete_directories.txt", "\n".join(delete_directories.keys()))
             zip_file.writestr("revision.txt", open(os.path.join(library_dir, "revision.txt")).read())
+            zip_file.writestr("search.json", open(os.path.join(library_dir, "search.json")).read())
 
         response = FileResponse(os.path.abspath(f.name))
         response.headers["Content-Disposition"] = ("attachment; filename=library.zip")
