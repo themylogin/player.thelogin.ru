@@ -15,7 +15,7 @@ from player.cover import find_cover
 from player.utils import get_duration
 
 
-def update_library(music_dir, rebuild=False):
+def update_library(ffmpeg, music_dir, rebuild=False):
     music_dir = os.path.abspath(music_dir)
     library_dir = os.path.join(DATA_DIR, "library")
 
@@ -119,7 +119,7 @@ def update_library(music_dir, rebuild=False):
                         "title"     : title,
                         "track"     : track,
                         "disc"      : disc,
-                        "duration"  : get_duration(abs_filename) or 0,
+                        "duration"  : get_duration(ffmpeg, abs_filename) or 0,
                     }
 
         artists = set()
@@ -214,9 +214,10 @@ def search_index_key(name):
 
 
 class LibraryUpdater(object):
-    def __init__(self, music_dir):
+    def __init__(self, ffmpeg, music_dir):
+        self.ffmpeg = ffmpeg
         self.music_dir = music_dir
 
     def update(self, updates):
-        for x in update_library(self.music_dir):
+        for x in update_library(self.ffmpeg, self.music_dir):
             pass

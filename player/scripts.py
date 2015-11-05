@@ -19,7 +19,7 @@ def updates_manager():
     from player.players import create_player, PlayerUpdater
 
     updates_manager = UpdatersManager(settings["music_dir"])
-    updates_manager.add_updater(LibraryUpdater(settings["music_dir"]))
+    updates_manager.add_updater(LibraryUpdater(settings["ffmpeg"], settings["music_dir"]))
     if settings.get("player"):
         player = create_player(settings["player"])
         updates_manager.add_updater(PlayerUpdater(player))

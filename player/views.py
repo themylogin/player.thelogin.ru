@@ -62,18 +62,18 @@ def file(request):
         if not os.path.exists(d):
             os.makedirs(d)
 
-        duration = get_duration(path)
+        duration = get_duration(request.registry.settings["ffmpeg"], path)
         if duration:
             expected_length = int(duration * (BITRATE * 1024) / 8)
         else:
             expected_length = None
 
         if not os.path.exists(f.path):
-            def avconv_thread():
+            def ffmpeg_thread():
                 while True:
                     with open(f.path, "w") as fh, open(os.devnull, "w") as null:
                         code = subprocess.call([
-                            "/usr/bin/avconv", "-i", path,
+                            request.registry.settings["ffmpeg"], "-i", path,
                             "-acodec", "libmp3lame", "-ab", "%dk" % BITRATE, "-ar", "44100", "-f", "mp3",
                             "-map", "0:0",
                             "-",
@@ -81,7 +81,7 @@ def file(request):
                     if code == 0:
                         break
                 f.set_completed()
-            threading.Thread(target=avconv_thread).start()
+            threading.Thread(target=ffmpeg_thread).start()
 
     content_offset = int(request.GET.get("content_offset", 0))
     if content_offset > 0:
@@ -282,11 +282,12 @@ def library(request):
 
 @view_config(route_name="update")
 def update(request):
+    ffmpeg = request.registry.settings["ffmpeg"]
     music_dir = request.registry.settings["music_dir"]
 
     def app_iter():
         t = 0
-        for rel_root in update_library(music_dir, request.GET.get("rebuild", "0") == "1"):
+        for rel_root in update_library(ffmpeg, music_dir, request.GET.get("rebuild", "0") == "1"):
             if time.time() - t > 1:
                 yield "%s\n" % rel_root
                 t = time.time()
