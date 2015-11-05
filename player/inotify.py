@@ -73,15 +73,18 @@ class MusicUpdatesProducer(threading.Thread):
             self.emit_update(event.path)
 
     def add_watch(self, directory):
-        self.watch_manager.add_watch(directory, pyinotify.IN_CREATE |
-                                                pyinotify.IN_DELETE |
-                                                pyinotify.IN_MOVED_FROM |
-                                                pyinotify.IN_MOVED_TO |
-                                                0)
-        for child in os.listdir(directory):
-            child_full = os.path.join(directory, child)
-            if os.path.isdir(child_full):
-                self.add_watch(child_full)
+        try:
+            self.watch_manager.add_watch(directory, pyinotify.IN_CREATE |
+                                                    pyinotify.IN_DELETE |
+                                                    pyinotify.IN_MOVED_FROM |
+                                                    pyinotify.IN_MOVED_TO |
+                                                    0)
+            for child in os.listdir(directory):
+                child_full = os.path.join(directory, child)
+                if os.path.isdir(child_full):
+                    self.add_watch(child_full)
+        except Exception:
+            logger.debug("add_watch(%r) failed", directory, exc_info=True)
 
     def emit_update(self, path):
         path = os.path.relpath(path, self.directory)
