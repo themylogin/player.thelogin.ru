@@ -10,6 +10,7 @@ import threading
 import time
 
 from player.app import app
+from player.mime import mime
 from player.utils import get_duration
 from player.views.utils import file_path_for_serving
 
@@ -111,6 +112,7 @@ def music(path):
     if request.method == "GET":
         if serve_directly:
             f = open(path)
+            content_type = mime.from_file(path)
             expected_length = os.path.getsize(path)
         else:
             f = IncompleteFile(converted_tmp_path)
@@ -118,6 +120,8 @@ def music(path):
             d = os.path.dirname(f.path)
             if not os.path.exists(d):
                 os.makedirs(d)
+
+            content_type = b"audio/mpeg"
 
             duration = get_duration(path)
             if duration:
@@ -138,7 +142,8 @@ def music(path):
         if content_offset > 0:
             f.read(content_offset)
 
-        headers = {"X-Accel-Buffering": "no"}
+        headers = {"Content-Type": content_type,
+                   "X-Accel-Buffering": "no"}
         if expected_length is not None:
             headers["X-Expected-Content-Length"] = str(expected_length)
 
