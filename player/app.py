@@ -1,13 +1,14 @@
 # -*- coding=utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals
 
+from flask import Flask
 import logging
-from flask.ext.sqlalchemy import SQLAlchemy
 
-from player.app import app
+import player.config
 
 logger = logging.getLogger(__name__)
 
-__all__ = [b"db"]
+__all__ = [b"app"]
 
-db = SQLAlchemy(app)
+app = Flask("player")
+app.config.from_object(player.config)

@@ -5,13 +5,15 @@ import logging
 import re
 import subprocess
 
+from player.app import app
+
 logger = logging.getLogger(__name__)
 
-__all__ = []
+__all__ = [b"get_duration"]
 
 
-def get_duration(ffmpeg, path):
-    stdout, stderr = subprocess.Popen([ffmpeg, b"-i", path],
+def get_duration(path):
+    stdout, stderr = subprocess.Popen([app.config["FFMPEG"], b"-i", path],
                                       stdout=subprocess.PIPE, stderr=subprocess.PIPE).communicate()
     m_duration = re.search("Duration: ([0-9:.]+),", stderr)
     if m_duration:

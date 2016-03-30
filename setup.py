@@ -1,58 +1,35 @@
-import os
+# -*- coding=utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals
 
-from setuptools import setup, find_packages
+import logging
 
-here = os.path.abspath(os.path.dirname(__file__))
-README = open(os.path.join(here, 'README.md')).read()
-CHANGES = open(os.path.join(here, 'CHANGES.txt')).read()
+from setuptools import find_packages, setup
 
-requires = [
-    "beautifulsoup4",
-    "html2text",
-    "python-mpd2",
-    "mutagen",
-    "numpy",
-    "pillow",
-    "pyinotify",
-    "pyramid",
-    "pyramid_debugtoolbar",
-    "requests",
-    "scikit-image",
-    "sqlalchemy",
-    "themyutils",
-    "waitress",
-    ]
+logger = logging.getLogger(__name__)
 
-setup(name='player',
-      version='0.0',
-      description='player',
-      long_description=README + '\n\n' + CHANGES,
-      classifiers=[
-        "Programming Language :: Python",
-        "Framework :: Pyramid",
-        "Topic :: Multimedia :: Sound/Audio",
-        "Topic :: Internet :: WWW/HTTP",
-        "Topic :: Internet :: WWW/HTTP :: WSGI :: Application",
-        ],
-      author='',
-      author_email='',
-      url='',
-      keywords='web pyramid pylons',
-      packages=find_packages(),
-      include_package_data=True,
-      zip_safe=False,
-      install_requires=requires,
-      tests_require=requires,
-      dependency_links=[
-        "https://github.com/themylogin/themyutils/archive/master.zip#egg=themyutils",
-        "svn+http://pygoogle.googlecode.com/svn/trunk/#egg=pygoogle",
-      ],
-      test_suite="player",
-      entry_points="""\
-      [paste.app_factory]
-      main = player:main
-      [console_scripts]
-      player_updates_manager = player.scripts:updates_manager
-      player_rebuild_lyrics = player.scripts:rebuild_lyrics
-      """,
-      )
+
+setup(
+    name="player",
+    version="0.0.0",
+    author="themylogin",
+    packages=find_packages(exclude=[]),
+    test_suite="nose.collector",
+    install_requires=[
+        "alembic",
+        "beautifulsoup4",
+        "celery",
+        "Flask",
+        "Flask-Script",
+        "Flask-SQLAlchemy",
+        "html2text",
+        "mutagen",
+        "numpy",
+        "pillow",
+        "pyinotify",
+        "python-mpd2",
+        "raven",
+        "requests",
+        "scikit-image",
+        "themyutils",
+    ],
+)
