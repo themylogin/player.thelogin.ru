@@ -1,0 +1,30 @@
+# -*- coding: utf-8 -*-
+from __future__ import absolute_import, division, unicode_literals
+
+import os
+
+SECRET_KEY = '...'
+
+SENTRY_DSN = "..."
+
+CELERY_BROKER_URL = "amqp:///player"
+CELERYD_HIJACK_ROOT_LOGGER = False
+
+SQLALCHEMY_DATABASE_URI = "mysql://root@localhost/player?charset=utf8"
+SQLALCHEMY_ECHO = True
+
+CACHE_TYPE = "redis"
+
+MUSIC_BITRATE = 256
+MUSIC_EXTENSIONS = (b"flac", b"m4a", b"mp3")
+DIRECT_MUSIC_EXTENSIONS = (b"m4a", b"mp3")
+
+DATA_DIR = os.path.join(os.path.dirname(__file__), b"../data")
+
+MUSIC_DIR = b"/media/storage/Music"
+TMP_DIR = b"/tmp/player.thelogin.ru"
+
+FFMPEG = b"/usr/bin/ffmpeg"
+PLAYER = b"mpd://192.168.0.4:6600"
+
+LAST_FM_THELOGIN_RU_URL = "http://last.fm.thelogin.ru"
