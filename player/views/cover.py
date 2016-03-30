@@ -24,7 +24,7 @@ def cover(path):
     image.thumbnail((640, 640), Image.ANTIALIAS)
     image.save(io, "JPEG")
 
-    return Response(io.getvalue(), headers={b"Content-Type", b"image/jpeg"})
+    return Response(io.getvalue(), headers={b"Content-Type": b"image/jpeg"})
 
 
 @app.route("/cover-for-file/")
@@ -45,4 +45,4 @@ def cover_for_file(path):
         io = StringIO()
         image = Image.open(os.path.join(app.config["DATA_DIR"], "default-cover.png"))
     image.save(io, "JPEG")
-    return Response(io.getvalue(), headers={b"Content-Type", b"image/jpeg"})
+    return Response(io.getvalue(), headers={b"Content-Type": b"image/jpeg"})
