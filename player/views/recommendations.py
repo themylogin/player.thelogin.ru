@@ -107,6 +107,9 @@ def recommendations_for_from_streamer(for_username, from_username):
         params["exclude-user"] = for_username
     limit = request.args.get("limit", 100, type=int)
 
+    include_dirs = request.args.getlist("include-dirs")
+    exclude_dirs = request.args.getlist("exclude-dirs")
+
     yielded = set()
     for line in requests.get(
         app.config["LAST_FM_THELOGIN_RU_URL"] + "/api/recommendations/",
@@ -116,6 +119,13 @@ def recommendations_for_from_streamer(for_username, from_username):
         recommendation = json.loads(line)
         track_path = artists_tracks.get(recommendation["artist"], {}).get(recommendation["track"])
         if track_path:
+            if include_dirs and not any(track_path.startswith(prefix.encode("utf-8"))
+                                        for prefix in include_dirs):
+                continue
+            if exclude_dirs and any(track_path.startswith(prefix.encode("utf-8"))
+                                    for prefix in exclude_dirs):
+                continue
+
             if request.args.get("type") == "file":
                 with open(os.path.join(os.path.dirname(os.path.join(library_path, encode_path(track_path))),
                                        b"index.json")) as f:

@@ -58,6 +58,7 @@ def library():
                 for new_file in new_files:
                     zip_file.write(os.path.join(library_dir, new_file), new_file)
                 zip_file.writestr("delete_directories.txt", "\n".join(delete_directories.keys()))
+                zip_file.writestr("genres.json", open(os.path.join(library_dir, "genres.json")).read())
                 zip_file.writestr("revision.txt", open(os.path.join(library_dir, "revision.txt")).read())
                 zip_file.writestr("search.json", open(os.path.join(library_dir, "search.json")).read())
 

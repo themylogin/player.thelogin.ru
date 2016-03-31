@@ -193,6 +193,8 @@ def update_library(rebuild=False):
     build_search_index(search_index, library_dir)
     serialize(os.path.join(library_dir, b"search.json"), search_index)
 
+    serialize(os.path.join(library_dir, b"genres.json"), app.config["LIST_GENRES"]())
+
 
 def get_pickler_for(path):
     if path.endswith(b".json"):
