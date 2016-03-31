@@ -107,8 +107,8 @@ def recommendations_for_from_streamer(for_username, from_username):
         params["exclude-user"] = for_username
     limit = request.args.get("limit", 100, type=int)
 
-    include_dirs = request.args.getlist("include-dirs")
-    exclude_dirs = request.args.getlist("exclude-dirs")
+    include_dirs = request.args.getlist("include-dir")
+    exclude_dirs = request.args.getlist("exclude-dir")
 
     yielded = set()
     for line in requests.get(
