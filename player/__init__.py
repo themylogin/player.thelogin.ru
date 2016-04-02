@@ -9,15 +9,23 @@ from werkzeug.exceptions import HTTPException
 from player.app import app
 from player.celery import celery
 from player.db import db
+from player.manager import manager
 from player.models import *
 
 import player.scripts
 import player.views
+import player.worker
 
 mimetypes.init()
 
+runner = sys.argv[0].split("/")[-1]
+
+try:
+    from themylog.client import setup_logging_handler
+    setup_logging_handler("player" + ("-%s" % runner if not runner.startswith("python") else ""))
+except Exception:
+    pass
+
 if app.config["SENTRY_DSN"]:
-    runner = sys.argv[0].split("/")[-1]
-    if runner in ["celery", "gunicorn", "uwsgi"]:
-        app.config["RAVEN_IGNORE_EXCEPTIONS"] = [HTTPException]
-        sentry = Sentry(app, wrap_wsgi=runner != "gunicorn")
+    app.config["RAVEN_IGNORE_EXCEPTIONS"] = [HTTPException]
+    sentry = Sentry(app, wrap_wsgi=runner != "gunicorn")

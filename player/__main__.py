@@ -12,7 +12,7 @@ if os.path.dirname(__file__) in sys.path:
 
 import logging
 
-from player.manager import manager
+from player import manager
 
 
 if __name__ == "__main__":

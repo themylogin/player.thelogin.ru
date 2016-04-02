@@ -2,14 +2,17 @@
 from __future__ import absolute_import, division, unicode_literals
 
 from collections import defaultdict
+import functools
 import json
 import hashlib
+import itertools
 import mutagen
 import mutagen.easyid3
 import os
 import pickle
 import re
 import shutil
+import unicodedata
 import urllib
 
 from player.app import app
@@ -26,7 +29,8 @@ def update_library(rebuild=False):
     dirs_with_content = set()
     dirs_with_content_encoded = set()
     dirs_with_files = set()
-    artists_tracks = defaultdict(dict, **(unserialize(os.path.join(library_dir, b"artists_tracks.pickle")) or {}))
+    artists_tracks = unserialize(os.path.join(library_dir, b"artists_tracks.pickle")) or\
+                        defaultdict(functools.partial(defaultdict, set))
     dirs_with_content_mtimes = {}
     for root, dirs, files in os.walk(music_dir, topdown=False, followlinks=True):
         rel_root = os.path.relpath(root, music_dir)
@@ -128,7 +132,7 @@ def update_library(rebuild=False):
                         "disc"      : disc,
                         "duration"  : get_duration(abs_filename) or 0,
                     }
-                    artists_tracks[artist][title] = rel_filename
+                    artists_tracks[artist][title].add(rel_filename)
 
         artists = set()
         for key in new_index:
@@ -191,6 +195,7 @@ def update_library(rebuild=False):
 
     search_index = []
     build_search_index(search_index, library_dir)
+    search_index = sort_search_index(search_index)
     serialize(os.path.join(library_dir, b"search.json"), search_index)
 
     serialize(os.path.join(library_dir, b"genres.json"), app.config["LIST_GENRES"]())
@@ -242,17 +247,39 @@ def build_search_index(search_index, library_root, root=None):
 
     for item in unserialize(root_index_path).values():
         if item["type"] == "directory":
-            search_index.append({"key":  search_index_key(item["name"]),
-                                 "item": item})
+            for key in search_index_keys(item["name"]):
+                search_index.append({"key":  key,
+                                     "item": item})
             build_search_index(search_index, library_root, os.path.join(library_root, item["path"]))
 
 
-def search_index_key(name):
-    key = name
+def search_index_keys(name):
+    keys = set()
 
-    key = re.sub(r"[0-9\-\.\(\)\[\]]+ ", "", key)
-    key = re.sub(r"[\W]+", "", key, flags=re.UNICODE)
+    base = name.lower()
+    base = re.sub(r"^[0-9\-\.\(\)\[\]]+ ", "", base)
+    for component in [base] + base.split("-"):
+        transformers = [
+            lambda s: s,
+            lambda s: re.sub(r"^(a|an|the) ", "", s),
+            lambda s: unicodedata.normalize("NFD", s).encode("ascii", "ignore")
+        ]
+        for r in range(len(transformers)):
+            for transformers_subset in itertools.permutations(transformers, r + 1):
+                variant = component.strip()
+                for transformer in transformers_subset:
+                    variant = transformer(variant).strip()
+                if variant:
+                    keys.add(re.sub(r"[\W]+", "", variant, flags=re.UNICODE).strip())
 
-    key = key.lower().strip()
+    return keys
 
-    return key
+
+def sort_search_index(index):
+    def item_cmp(a, b):
+        if a["key"] == b["key"]:
+            return cmp(len(a["item"]), len(b["item"]))
+
+        return cmp(a["key"], b["key"])
+
+    return sorted(index, cmp=item_cmp)
