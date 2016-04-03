@@ -1,6 +1,7 @@
 # -*- coding=utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals
 
+import itertools
 import unittest
 
 from player.views.recommendations import find_variants, choose_best_track_path
@@ -43,42 +44,56 @@ class FindVariantsTestCase(unittest.TestCase):
 
 
 class ChooseBestTrackPathTestCase(unittest.TestCase):
+    def t(self, paths, path):
+        for permutation in itertools.permutations(paths):
+            self.assertEqual(choose_best_track_path(permutation), path)
+
     def test_choose_from_album(self):
-        self.assertEqual(
-            choose_best_track_path([
+        self.t(
+            [
                 b'Pop/Adele/Bonus/2008 - 19/Bonus CD - Acoustic Set Live From The Hotel Cafe, Los Angeles/07. Make You Feel My Love.mp3',
                 b'Pop/Adele/Others/2008 - Make You Feel My Love (CD, Single)/01. Make You Feel My Love.mp3',
                 b'Pop/Adele/Albums/2008 - 19/09. Make You Feel My Love.mp3',
                 b'Pop/Adele/Others/2011 - Live At The Royal Albert Hall/15. Make You Feel My Love.mp3',
-            ]),
+            ],
             b'Pop/Adele/Albums/2008 - 19/09. Make You Feel My Love.mp3'
         )
 
     def test_choose_not_from_compilation(self):
-        self.assertEqual(
-            choose_best_track_path([
+        self.t(
+            [
                 b'Rave/Industrial/Nine Inch Nails/Official/SEED/(2008) Lights In The Sky - Over North America 2008 Tour Sampler/02 Does it Offend You, Yeah_ - We Are Rockstars.mp3'
                 b'Rave/Retarded Music/Does It Offend You, Yeah/2008 - We Are Rockstars (Promo CDM)/02-does_it_offend_you_yeah-we_are_rockstars.mp3',
                 b'Rave/Retarded Music/Does It Offend You, Yeah/2008 - You Have No Idea What You\'re Getting Yourself Into/03 We Are Rockstars.flac',
-            ]),
+            ],
             b'Rave/Retarded Music/Does It Offend You, Yeah/2008 - You Have No Idea What You\'re Getting Yourself Into/03 We Are Rockstars.flac'
         )
 
     def test_choose_from_earlier_album(self):
-        self.assertEqual(
-            choose_best_track_path([
+        self.t(
+            [
                 b'Rock/Classic/Dire Stratis/Sultans Of Swing (The Very Best Of Dire Straits)/CD1/02 - Lady Writer.flac',
                 b'Rock/Classic/Dire Stratis/1979 - Communique/05 - Lady Writer.flac',
-            ]),
+            ],
             b'Rock/Classic/Dire Stratis/1979 - Communique/05 - Lady Writer.flac',
         )
 
     def test_better_choose_from_ep_than_undated_directory(self):
-        self.assertEqual(
-            choose_best_track_path([
+        self.t(
+            [
                 b'Rave/Retarded Music/Hadouken!/Etc/Others Tracks/2009 - Something Very Bad.mp3',
                 b'Rave/Retarded Music/Hadouken!/EPs/2009 - M.A.D. EP/02. Something Very Bad.mp3',
 
-            ]),
+            ],
             b'Rave/Retarded Music/Hadouken!/EPs/2009 - M.A.D. EP/02. Something Very Bad.mp3'
+        )
+
+    def test_do_not_choose_remasters(self):
+        self.t(
+            [
+                b'Rock/Post/God Is An Astronaut (10th Anniversary)/2005 - All Is Violent, All Is Bright/04 - Fireflies and Empty skies.flac',
+                b'Rock/Post/God Is An Astronaut/2005 - All Is Violent, All Is Bright/04 - Fire Flies And Empty Skies.flac',
+
+            ],
+            b'Rock/Post/God Is An Astronaut/2005 - All Is Violent, All Is Bright/04 - Fire Flies And Empty Skies.flac'
         )

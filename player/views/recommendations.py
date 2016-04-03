@@ -188,11 +188,11 @@ def choose_best_track_path(paths):
     for path in paths:
         m = re.search(b"[^0-9]((1|2)[0-9]{3})[^0-9]", b"/".join(path.split(b"/")[:-1]))
         if m:
-            rate_base = int(m.group(1))
+            rate = int(m.group(1))
         else:
-            rate_base = 13000
+            rate = 13000
 
-        for substring, rate in [
+        for substring, weight in [
             (b"EP",         10000),
             (b"VA",         12500),
             (b"Single",     15000),
@@ -201,6 +201,7 @@ def choose_best_track_path(paths):
             (b"Live",       20000),
         ]:
             if re.search(b"\W%s\W" % substring, path, re.IGNORECASE):
+                rate += weight
                 break
         else:
             siblings_count = 0
@@ -211,10 +212,13 @@ def choose_best_track_path(paths):
                 siblings_artists.add(item["artist"])
 
             if len(siblings_artists) > siblings_count / 4:
-                rate = 5000 + len(siblings_artists)
+                rate += 5000 + len(siblings_artists)
             else:
-                rate = 0
+                rate += 0
 
-        rates[rate_base + rate].append(path)
+            if re.search(b"\W(anniversary|deluxe|remaster)\W", path, re.IGNORECASE):
+                rate += 1000
+
+        rates[rate].append(path)
 
     return rates[sorted(rates.keys())[0]][0]
