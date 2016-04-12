@@ -28,3 +28,18 @@ FFMPEG = b"/usr/bin/ffmpeg"
 PLAYER = b"mpd://192.168.0.4:6600"
 
 LAST_FM_THELOGIN_RU_URL = "http://last.fm.thelogin.ru"
+
+LIST_GENRES = lambda: sorted(
+    [{"name": name,
+      "path": name}
+     for name in os.listdir(MUSIC_DIR)
+     if os.path.isdir(os.path.join(MUSIC_DIR, name))] +
+    sum([[{"name": "%s/%s" % (base, name),
+           "path": "%s/%s" % (base, name)}
+          for name in os.listdir(os.path.join(MUSIC_DIR, base))
+          if os.path.isdir(os.path.join(MUSIC_DIR, base, name))]
+         for base in ["Rave", "Rock", "Trance"]
+         if os.path.isdir(os.path.join(MUSIC_DIR, base))],
+        []),
+    key=lambda genre: genre["name"].lower()
+)
