@@ -26,7 +26,7 @@ setup(
         "numpy",
         "pillow",
         "pyinotify",
-        "python-mime",
+        "python-magic",
         "python-mpd2",
         "raven",
         "requests",
