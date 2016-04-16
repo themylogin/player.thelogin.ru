@@ -14,6 +14,9 @@ setup(
     author="themylogin",
     packages=find_packages(exclude=[]),
     test_suite="nose.collector",
+    dependency_links=[
+        "https://github.com/themylogin/themyutils/archive/master.zip#egg=themyutils"
+    ],
     install_requires=[
         "alembic",
         "beautifulsoup4",
