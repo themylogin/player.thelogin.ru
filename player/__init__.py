@@ -26,6 +26,6 @@ try:
 except Exception:
     pass
 
-if app.config["SENTRY_DSN"]:
+if app.config.get("SENTRY_DSN"):
     app.config["RAVEN_IGNORE_EXCEPTIONS"] = [HTTPException]
     sentry = Sentry(app, wrap_wsgi=runner != "gunicorn")
