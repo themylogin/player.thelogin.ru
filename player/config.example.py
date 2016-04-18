@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals
 
+from flask import request
 import os
 
 SECRET_KEY = '...'
@@ -22,7 +23,9 @@ MUSIC_DIR = b"/music"
 TMP_DIR = b"/player/data/tmp"
 
 FFMPEG = b"/usr/bin/ffmpeg"
+
 LOCAL_PLAYER = None
+LOCAL_PLAYER_ALLOWED = lambda: request.remote_addr.startswith(b"192.168.0.")
 
 LAST_FM_THELOGIN_RU_URL = None
 
