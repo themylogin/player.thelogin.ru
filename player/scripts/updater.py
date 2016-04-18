@@ -33,7 +33,7 @@ def updater():
 
     updates_manager.add_updater(LibraryUpdater())
 
-    updates_manager.add_updater(PlayerUpdater(create_player(app.config["PLAYER"])))
+    updates_manager.add_updater(PlayerUpdater(create_player(app.config["LOCAL_PLAYER"])))
 
     while True:
         time.sleep(1)

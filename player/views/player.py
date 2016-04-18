@@ -12,4 +12,4 @@ logger = logging.getLogger(__name__)
 
 @app.route("/player/<command>", methods=["POST"])
 def player_command(command):
-    return jsonify(getattr(create_player(app.config["PLAYER"]), command)(**request.form))
+    return jsonify(getattr(create_player(app.config["LOCAL_PLAYER"]), command)(**request.form))

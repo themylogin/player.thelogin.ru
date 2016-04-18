@@ -15,5 +15,5 @@ logger = logging.getLogger(__name__)
 def periodic_update_just_in_case():
     list(update_library())
 
-    if app.config["PLAYER"]:
-        create_player(app.config["PLAYER"]).update("")
+    if app.config["LOCAL_PLAYER"]:
+        create_player(app.config["LOCAL_PLAYER"]).update("")
