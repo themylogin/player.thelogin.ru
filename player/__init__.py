@@ -22,7 +22,9 @@ runner = sys.argv[0].split("/")[-1]
 
 try:
     from themylog.client import setup_logging_handler
-    setup_logging_handler("player" + ("-%s" % runner if not runner.startswith("python") else ""))
+    setup_logging_handler("player" + ("-%s" % runner
+                                      if not (runner.startswith("python") or runner == "-c")
+                                      else ""))
 except Exception:
     pass
 
