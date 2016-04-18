@@ -5,11 +5,12 @@ import os
 
 SECRET_KEY = '...'
 
+SENTRY_DSN = None
+
 CELERY_BROKER_URL = "amqp:///player"
 CELERYD_HIJACK_ROOT_LOGGER = False
 
-SQLALCHEMY_DATABASE_URI = "mysql://root@localhost/player?charset=utf8"
-SQLALCHEMY_ECHO = True
+SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://themylogin:themylogin@localhost/player"
 
 MUSIC_BITRATE = 256
 MUSIC_EXTENSIONS = (b"flac", b"m4a", b"mp3")

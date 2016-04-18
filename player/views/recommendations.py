@@ -12,6 +12,7 @@ import re
 import requests
 
 from player.app import app
+from player.db import db
 from player.library.update import encode_path
 
 logger = logging.getLogger(__name__)
@@ -95,8 +96,18 @@ def recommendations_for_from(for_username, from_username):
 def recommendations_for_from_streamer(for_username, from_username):
     library_path = os.path.join(app.config["DATA_DIR"], b"library")
 
-    with open(os.path.join(library_path, b"artists_tracks.pickle")) as f:
-        artists_tracks = pickle.load(f)
+    artists_tracks = defaultdict(lambda: defaultdict(set))
+    connection = db.session.get_bind(mapper=None).connect()
+    try:
+        result = connection.execution_options(stream_results=True).execute("""
+            SELECT track.artist, track.title, file.path
+            FROM file
+            JOIN track ON (track.id = file.track_id)
+        """)
+        for row in result:
+            artists_tracks[row["artist"]][row["title"]].add(bytes(row["path"]))
+    finally:
+        connection.close()
 
     params = {"include-user": from_username,
               "min-scrobbles-count": request.args["min-scrobbles-count"],

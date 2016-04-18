@@ -18,6 +18,7 @@ import urllib
 
 from player.app import app
 from player.cover.find import find_cover
+from player.db import db
 from player.utils import get_duration
 
 __all__ = [b"update_library"]
@@ -34,8 +35,6 @@ def update_library(rebuild=False):
         dirs_with_content = set()
         dirs_with_content_encoded = set()
         dirs_with_files = set()
-        artists_tracks = unserialize(os.path.join(library_dir, b"artists_tracks.pickle")) or\
-                            defaultdict(functools.partial(defaultdict, set))
         dirs_with_content_mtimes = {}
         for root, dirs, files in os.walk(music_dir, topdown=False, followlinks=True):
             rel_root = os.path.relpath(root, music_dir)
@@ -122,6 +121,40 @@ def update_library(rebuild=False):
                                         album = match.group(2).strip().strip("-").strip()
                                     break
 
+                        checksum = calculate_checksum(os.path.join(music_dir, rel_filename))
+
+                        track_id = db.session.execute("""
+                            INSERT INTO track (artist, title)
+                            VALUES (:artist, :title)
+                            ON CONFLICT (artist, title) DO NOTHING
+                            RETURNING id
+                        """, {
+                            "artist": artist,
+                            "title": title,
+                        }).fetchone()
+                        if track_id is None:
+                            track_id = db.session.execute("""
+                                SELECT id FROM track
+                                WHERE artist = :artist AND title = :title
+                            """, {
+                                "artist": artist,
+                                "title": title,
+                            }).fetchone()["id"]
+                        else:
+                            track_id = track_id["id"]
+
+                        db.session.execute("""
+                            INSERT INTO file (track_id, path, checksum)
+                            VALUES (:track_id, :path, :checksum)
+                            ON CONFLICT (path) DO UPDATE
+                                SET track_id = :track_id, checksum = :checksum
+                                WHERE file.path = :path
+                        """, {
+                            "track_id": track_id,
+                            "path": buffer(rel_filename),
+                            "checksum": checksum,
+                        })
+
                         dirs_with_files.add(root)
                         new_index[filename_decoded] = {
                             "type"      : "file",
@@ -136,8 +169,8 @@ def update_library(rebuild=False):
                             "track"     : track,
                             "disc"      : disc,
                             "duration"  : get_duration(abs_filename) or 0,
+                            "checksum"  : checksum,
                         }
-                        artists_tracks[artist][title].add(rel_filename)
 
             artists = set()
             for key in new_index:
@@ -191,7 +224,19 @@ def update_library(rebuild=False):
         with open(os.path.join(app.config["DATA_DIR"], b"library_revisions", b"%s.json" % revision), "w") as f:
             f.write(revision_data)
 
-        serialize(os.path.join(library_dir, b"artists_tracks.pickle"), artists_tracks)
+        connection = db.session.get_bind(mapper=None).connect()
+        try:
+            result = connection.execution_options(stream_results=True).execute("""
+                SELECT file.id, file.path
+                FROM file
+            """)
+            for row in result:
+                path = os.path.join(music_dir, bytes(row["path"]))
+                if not os.path.exists(path):
+                    db.session.execute("DELETE FROM file WHERE id = :id",
+                                       {"id": row["id"]})
+        finally:
+            connection.close()
 
         history = sorted(filter(lambda d: not re.search("(CD|Disc)\s*\d", d.split(b"/")[-1]),
                                 dirs_with_content),
@@ -204,6 +249,8 @@ def update_library(rebuild=False):
         serialize(os.path.join(library_dir, b"search.json"), search_index)
 
         serialize(os.path.join(library_dir, b"genres.json"), app.config["LIST_GENRES"]())
+
+        db.session.commit()
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)
         lock.close()
@@ -291,3 +338,11 @@ def sort_search_index(index):
         return cmp(a["key"], b["key"])
 
     return sorted(index, cmp=item_cmp)
+
+
+def calculate_checksum(path, blocksize=32768):
+    hash = hashlib.md5()
+    with open(path, "rb") as f:
+        for block in iter(lambda: f.read(blocksize), b""):
+            hash.update(block)
+    return hash.hexdigest()
