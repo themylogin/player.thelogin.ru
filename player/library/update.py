@@ -312,7 +312,7 @@ def search_index_keys(name):
     keys = set()
 
     base = name.lower()
-    base = re.sub(r"^[0-9\-\.\(\)\[\]]+ ", "", base)
+    base = re.sub(r"^[0-9\-\.\(\)\[\]]{4,} ", "", base)
     for component in [base] + base.split("-"):
         transformers = [
             lambda s: s,

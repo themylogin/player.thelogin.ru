@@ -34,3 +34,7 @@ class SearchIndexKeysTestCast(unittest.TestCase):
     def test_articles(self):
         self.assertEqual(search_index_keys("A Shoreline Dream"),
                          {"ashorelinedream", "shorelinedream"})
+
+    def test_numerals(self):
+        self.assertEqual(search_index_keys("93 Million Miles From The Sun"),
+                         {"93millionmilesfromthesun"})
