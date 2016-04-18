@@ -11,7 +11,8 @@ import time
 from zipfile import ZipFile, ZIP_DEFLATED
 
 from player.app import app
-from player.library.update import update_library
+from player.db import db
+from player.library.update import update_library, encode_path
 
 logger = logging.getLogger(__name__)
 
@@ -79,3 +80,21 @@ def update_library_reporter(*args, **kwargs):
         if time.time() - t > 1:
             yield b"%s\n" % rel_root
             t = time.time()
+
+
+@app.route("/library/possessions")
+def library_possessions():
+    possessions = {}
+
+    connection = db.session.get_bind(mapper=None).connect()
+    try:
+        result = connection.execution_options(stream_results=True).execute("""
+            SELECT file.checksum, file.path
+            FROM file
+        """)
+        for row in result:
+            possessions[row["checksum"]] = encode_path(bytes(row["path"]))
+    finally:
+        connection.close()
+
+    return jsonify(possessions)

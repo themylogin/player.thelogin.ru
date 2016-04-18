@@ -38,7 +38,8 @@ nosetests.xml
 # PyCharm
 .idea
 
-alembic.ini
 data/library/
 data/library_revisions/
 player/config.py
+.env
+alembic.ini

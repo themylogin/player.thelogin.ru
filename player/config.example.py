@@ -7,10 +7,10 @@ SECRET_KEY = '...'
 
 SENTRY_DSN = None
 
-CELERY_BROKER_URL = "amqp:///player"
+CELERY_BROKER_URL = "amqp://rabbitmq"
 CELERYD_HIJACK_ROOT_LOGGER = False
 
-SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://themylogin:themylogin@localhost/player"
+SQLALCHEMY_DATABASE_URI = "postgresql+psycopg2://player:player@postgres/player"
 
 MUSIC_BITRATE = 256
 MUSIC_EXTENSIONS = (b"flac", b"m4a", b"mp3")
@@ -18,13 +18,13 @@ DIRECT_MUSIC_EXTENSIONS = (b"m4a", b"mp3")
 
 DATA_DIR = os.path.join(os.path.dirname(__file__), b"../data")
 
-MUSIC_DIR = b"/media/storage/Music"
-TMP_DIR = b"/tmp/player.thelogin.ru"
+MUSIC_DIR = b"/music"
+TMP_DIR = b"/player/data/tmp"
 
 FFMPEG = b"/usr/bin/ffmpeg"
-PLAYER = b"mpd://192.168.0.4:6600"
+LOCAL_PLAYER = None
 
-LAST_FM_THELOGIN_RU_URL = "http://last.fm.thelogin.ru"
+LAST_FM_THELOGIN_RU_URL = None
 
 LIST_GENRES = lambda: sorted(
     [{"name": name,

@@ -1,0 +1,57 @@
+version: "2"
+
+services:
+  app:
+    build: .
+
+    command: uwsgi --master --plugin python --module player:app --processes 5 --chmod-socket=666 --socket /var/run/player.uwsgi
+    links:
+      - postgres:postgres
+      - rabbitmq:rabbitmq
+    volumes:
+      - "${MUSIC_DIRECTORY}:/music"
+      - .:/player
+      - /var/run
+
+  worker:
+    build: .
+
+    command: celery worker -A player:celery
+    environment:
+      C_FORCE_ROOT: "yes"
+    volumes_from:
+      - app
+
+  scheduler:
+    build: .
+
+    command: celery beat -A player:celery -s /var/run/player.schedule --pidfile=
+    volumes_from:
+      - app
+
+  nginx:
+    build: ./docker/nginx
+
+    links:
+      - app:app
+    ports:
+      - "80:${PORT}"
+    volumes_from:
+      - app
+
+  postgres:
+    image: postgres:latest
+
+    environment:
+      LC_ALL: C.UTF-8
+      POSTGRES_DB: player
+      POSTGRES_USER: player
+      POSTGRES_PASSWORD: player
+    volumes:
+      - postgres-data:/var/lib/postgresql
+
+  rabbitmq:
+    image: rabbitmq:latest
+
+volumes:
+  postgres-data:
