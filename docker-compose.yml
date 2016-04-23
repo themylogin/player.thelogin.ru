@@ -36,7 +36,7 @@ services:
     links:
       - app:app
     ports:
-      - "80:${PORT}"
+      - "${PORT}:80"
     volumes_from:
       - app
 
