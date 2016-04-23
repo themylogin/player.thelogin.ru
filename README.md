@@ -10,3 +10,10 @@ Installation
 python install.py install --help
 ```
 
+Upgrading
+---------
+
+```
+python install.py update
+```
+
