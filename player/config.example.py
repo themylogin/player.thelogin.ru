@@ -8,6 +8,8 @@ SECRET_KEY = '...'
 
 SENTRY_DSN = None
 
+REDIS = dict(host="redis", port=6379, db=0)
+
 CELERY_BROKER_URL = "amqp://rabbitmq"
 CELERYD_HIJACK_ROOT_LOGGER = False
 

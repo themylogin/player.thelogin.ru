@@ -148,3 +148,10 @@ def music(path):
             headers["X-Expected-Content-Length"] = str(expected_length)
 
         return Response(file_streamer(f), headers=headers)
+
+
+@app.route("/direct/<path:path>", methods=["HEAD", "GET"])
+def direct(path):
+    path = file_path_for_serving("/direct/")
+
+    return send_file(path, mime.from_file(path), True, path.split(b"/")[-1])

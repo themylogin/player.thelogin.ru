@@ -18,10 +18,12 @@ setup(
         "https://github.com/themylogin/themyutils/archive/master.zip#egg=themyutils"
     ],
     install_requires=[
+        "ago",
         "alembic",
         "beautifulsoup4",
         "celery",
         "Flask",
+        "Flask-Bootstrap",
         "Flask-Script",
         "Flask-SQLAlchemy",
         "html2text",
@@ -33,6 +35,8 @@ setup(
         "python-magic",
         "python-mpd2",
         "raven[flask]",
+        "redis",
+        "redlock-py",
         "requests",
         "scikit-image",
         "themyutils",

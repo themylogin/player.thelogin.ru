@@ -1,9 +1,7 @@
 # -*- coding=utf-8 -*-
 from __future__ import absolute_import, division, unicode_literals
 
-from collections import defaultdict
 import fcntl
-import functools
 import json
 import hashlib
 import itertools
@@ -13,12 +11,15 @@ import os
 import pickle
 import re
 import shutil
+import sys
+import time
 import unicodedata
 import urllib
 
 from player.app import app
 from player.cover.find import find_cover
 from player.db import db
+from player.redis import redis
 from player.utils import get_duration
 
 __all__ = [b"update_library"]
@@ -31,6 +32,11 @@ def update_library(rebuild=False):
     lock_filename = os.path.join(library_dir, b"lock")
     lock = open(lock_filename, "w")
     fcntl.flock(lock, fcntl.LOCK_EX)
+    redis.set("library_update:start", float(time.time()))
+    redis.set("library_update:finish", 0)
+    redis.set("library_update:updater:pid", os.getpid())
+    redis.set("library_update:updater:cmdline", b" ".join(sys.argv))
+    redis.set("library_update:current", b"<Starting>")
     try:
         dirs_with_content = set()
         dirs_with_content_encoded = set()
@@ -40,6 +46,7 @@ def update_library(rebuild=False):
             rel_root = os.path.relpath(root, music_dir)
             if rel_root == b".":
                 rel_root = b""
+            redis.set("library_update:current", rel_root)
             yield rel_root
 
             index_file = os.path.join(library_dir, encode_path(rel_root), b"index.json")
@@ -201,6 +208,7 @@ def update_library(rebuild=False):
 
                 dirs_with_content_mtimes[rel_root] = os.stat(root).st_mtime
 
+        redis.set("library_update:current", b"<Removing obsolete files>")
         for root, dirs, files in os.walk(library_dir):
             rel_root = os.path.relpath(root, library_dir)
             if rel_root == ".":
@@ -210,20 +218,7 @@ def update_library(rebuild=False):
                 if os.path.join(rel_root, directory) not in dirs_with_content_encoded:
                     shutil.rmtree(os.path.join(root, directory))
 
-        revision_data = {}
-        for root, dirs, files in os.walk(library_dir, topdown=False):
-            rel_root = os.path.relpath(root, library_dir)
-            if rel_root == ".":
-                rel_root = ""
-
-            revision_data[rel_root] = open(os.path.join(root, b"index.json.checksum")).read()
-        revision_data = json.dumps(revision_data)
-        revision = hashlib.md5(revision_data).hexdigest()
-        with open(os.path.join(library_dir, b"revision.txt"), "w") as f:
-            f.write(revision)
-        with open(os.path.join(app.config["DATA_DIR"], b"library_revisions", b"%s.json" % revision), "w") as f:
-            f.write(revision_data)
-
+        redis.set("library_update:current", b"<Removing obsolete records from DB>")
         connection = db.session.get_bind(mapper=None).connect()
         try:
             result = connection.execution_options(stream_results=True).execute("""
@@ -238,22 +233,42 @@ def update_library(rebuild=False):
         finally:
             connection.close()
 
+        redis.set("library_update:current", b"<Creating revision>")
+        revision_data = {}
+        for root, dirs, files in os.walk(library_dir, topdown=False):
+            rel_root = os.path.relpath(root, library_dir)
+            if rel_root == ".":
+                rel_root = ""
+
+            revision_data[rel_root] = open(os.path.join(root, b"index.json.checksum")).read()
+        revision_data = json.dumps(revision_data)
+        revision = hashlib.md5(revision_data).hexdigest()
+        with open(os.path.join(library_dir, b"revision.txt"), "w") as f:
+            f.write(revision)
+        with open(os.path.join(app.config["DATA_DIR"], b"library_revisions", b"%s.json" % revision), "w") as f:
+            f.write(revision_data)
+
+        redis.set("library_update:current", b"<Building history>")
         history = sorted(filter(lambda d: not re.search("(CD|Disc)\s*\d", d.split(b"/")[-1]),
                                 dirs_with_content),
                          key=lambda d: dirs_with_content_mtimes[d])
         serialize(os.path.join(library_dir, b"history.pickle"), history)
 
+        redis.set("library_update:current", b"<Building search index>")
         search_index = []
         build_search_index(search_index, library_dir)
         search_index = sort_search_index(search_index)
         serialize(os.path.join(library_dir, b"search.json"), search_index)
 
+        redis.set("library_update:current", b"<Building genres>")
         serialize(os.path.join(library_dir, b"genres.json"), app.config["LIST_GENRES"]())
 
+        redis.set("library_update:current", b"<Completing>")
         db.session.commit()
     finally:
         fcntl.flock(lock, fcntl.LOCK_UN)
         lock.close()
+        redis.set("library_update:finish", float(time.time()))
 
 
 def get_pickler_for(path):

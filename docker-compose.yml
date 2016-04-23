@@ -8,6 +8,7 @@ services:
     links:
       - postgres:postgres
       - rabbitmq:rabbitmq
+      - redis:redis
     volumes:
       - "${MUSIC_DIRECTORY}:/music"
       - .:/player
@@ -52,6 +53,9 @@ services:
 
   rabbitmq:
     image: rabbitmq:latest
+
+  redis:
+    image: redis:latest
 
 volumes:
   postgres-data:

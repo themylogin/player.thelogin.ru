@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 @cron.job(hour=0, minute=0)
 def clear_cache():
     subprocess.check_call(["find", app.config["TMP_DIR"],
+                           "!", "-name", ".gitkeep", "-and",
                            "-mtime", "+1",
                            "-exec", "rm", "{}", ";"])
 
