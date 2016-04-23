@@ -68,8 +68,8 @@ def update(args):
     subprocess.check_call(["git", "pull"])
 
     if subprocess.check_output(["md5sum", new_config]) != subprocess.check_output(["md5sum", old_config]):
-        print("Configuration file %r was updated. Please, revise it and press any key to continue")
-        subprocess.call(["diff", old_config, new_config])
+        print("Configuration file %r was updated. Please, revise it and press any key to continue" % new_config)
+        subprocess.call(["diff", "-c", old_config, new_config])
         raw_input()
 
     subprocess.check_call(["docker-compose", "build"])
