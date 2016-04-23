@@ -36,7 +36,6 @@ setup(
         "python-mpd2",
         "raven[flask]",
         "redis",
-        "redlock-py",
         "requests",
         "scikit-image",
         "themyutils",
