@@ -65,9 +65,9 @@ def update(args):
         shutil.copy(new_config, old_config)
 
     subprocess.check_call(["docker-compose", "stop"])
-    subparsers.check_call(["git", "pull"])
+    subprocess.check_call(["git", "pull"])
 
-    if subprocess.check_call(["md5sum", new_config]) !=subprocess.check_call(["md5sum", old_config]):
+    if subprocess.check_output(["md5sum", new_config]) != subprocess.check_output(["md5sum", old_config]):
         print("Configuration file %r was updated. Please, revise it and press any key to continue")
         subprocess.check_call(["diff", old_config, new_config])
         raw_input()
