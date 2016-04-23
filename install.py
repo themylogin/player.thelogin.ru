@@ -49,11 +49,35 @@ def install(args):
         with open(os.path.join(cwd, "player/config.py"), "w") as dst:
             dst.write(config)
 
-    subprocess.call(["docker-compose", "build"])
-    subprocess.call(["docker-compose", "run",
-                     "-w", "/player",
-                     "app",
-                     "alembic", "upgrade", "head"])
+    subprocess.check_call(["docker-compose", "build"])
+    subprocess.check_call(["docker-compose", "run",
+                           "-w", "/player",
+                           "app",
+                           "alembic", "upgrade", "head"])
+
+
+def update(args):
+    cwd = os.path.dirname(__file__)
+
+    new_config = os.path.join(cwd, "player", "config.example.py")
+    old_config = os.path.join(cwd, "player", "config.example.py.old")
+    if not os.path.exists(old_config):
+        shutil.copy(new_config, old_config)
+
+    subprocess.check_call(["docker-compose", "stop"])
+    subparsers.check_call(["git", "pull"])
+
+    if subprocess.check_call(["md5sum", new_config]) !=subprocess.check_call(["md5sum", old_config]):
+        print("Configuration file %r was updated. Please, revise it and press any key to continue")
+        subprocess.check_call(["diff", old_config, new_config])
+        raw_input()
+
+    subprocess.check_call(["docker-compose", "build"])
+    subprocess.check_call(["docker-compose", "run",
+                           "-w", "/player",
+                           "app",
+                           "alembic", "upgrade", "head"])
+    os.unlink(old_config)
 
 
 if __name__ == "__main__":
@@ -104,6 +128,15 @@ if __name__ == "__main__":
                 https://getsentry.com/ DSN (to log error messages)
             """)
     )
+
+    update_parser = subparsers.add_parser(
+            "update",
+            formatter_class=argparse.RawTextHelpFormatter,
+            description=textwrap.dedent("""\
+                Pull changes and run docker-compose build
+            """)
+    )
+    update_parser.set_defaults(func=update)
 
     args = parser.parse_args()
     args.func(args)
