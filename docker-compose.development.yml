@@ -1,0 +1,18 @@
+version: "2"
+
+services:
+  app:
+    command: >
+      sh -cex "
+        cd /player;
+        /virtualenv/bin/python -m player runserver -d -r -h 0.0.0.0 -p 80;
+      "
+    volumes:
+      - ./:/player
+
+  nginx:
+    command: >
+      sh -cex "
+        sed -i.bak 's/uwsgi_pass unix:\/var\/run\/player\.uwsgi/proxy_pass http:\/\/app/g' /etc/nginx/conf.d/default.conf;
+        nginx -g 'daemon off;';
+      "
