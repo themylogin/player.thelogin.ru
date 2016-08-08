@@ -23,4 +23,4 @@ def clear_cache():
 def clear_old_library_revisions():
     subprocess.check_call(["find", os.path.join(app.config["DATA_DIR"], b"library_revisions"),
                            "-mtime", "+30",
-                           "-exec", "rm", "{}", ";"])
+                           "-exec", "rm", "-f", "{}", ";"])

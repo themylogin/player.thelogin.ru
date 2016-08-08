@@ -21,7 +21,7 @@ setup(
         "ago",
         "alembic",
         "beautifulsoup4",
-        "celery",
+        "celery==3.1.23",
         "Flask",
         "Flask-Bootstrap",
         "Flask-Script",

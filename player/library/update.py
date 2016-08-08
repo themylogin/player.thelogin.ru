@@ -6,7 +6,6 @@ import json
 import hashlib
 import itertools
 import mutagen
-import mutagen.easyid3
 import os
 import pickle
 import re
@@ -104,10 +103,7 @@ def update_library(rebuild=False):
                         rel_filename = os.path.relpath(abs_filename, music_dir)
 
                         try:
-                            if extension == "mp3":
-                                metadata = mutagen.easyid3.EasyID3(abs_filename)
-                            else:
-                                metadata = mutagen.File(abs_filename)
+                            metadata = mutagen.File(abs_filename, easy=True)
                         except:
                             metadata = {}
 

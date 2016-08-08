@@ -21,7 +21,14 @@ RUN apt-get install -y \
 
 RUN apt-get install -y ffmpeg
 
-RUN pip install flask
+RUN mkdir /player
+RUN mkdir /player/player
+RUN touch /player/player/__init__.py
+ADD setup.py /player
 
+WORKDIR /player
+RUN pip install flask
+RUN python setup.py develop
+
+RUN rm -rf /player
 ADD . /player
-RUN cd /player && python setup.py develop

@@ -6,9 +6,9 @@ services:
 
     command: >
       sh -cex "
-        cd /last_fm;
-        /virtualenv/bin/alembic upgrade head;
-        exec command: uwsgi --master --plugin python --module player:app --processes 5 --chmod-socket=666 --socket /var/run/player.uwsgi;
+        cd /player;
+        alembic upgrade head;
+        exec uwsgi --master --plugin python --module player:app --processes 5 --chmod-socket=666 --socket /var/run/player.uwsgi;
       "
     links:
       - postgres:postgres
