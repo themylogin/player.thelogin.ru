@@ -120,6 +120,7 @@ class SongMeanings(SoupSimpleLyricsFetcher):
 
 @fetcher("genius.com")
 class Genius(SoupSimpleLyricsFetcher):
+    tag = "lyrics"
     attrs = {"class": "lyrics"}
 
 
