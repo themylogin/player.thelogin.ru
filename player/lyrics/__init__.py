@@ -56,12 +56,13 @@ def fetcher(host):
 class LyricsFetcher(object):
     def __init__(self):
         self.h = html2text.HTML2Text()
+        self.h.ignore_emphasis = True
         self.h.ignore_links = True
 
     def fetch(self, html):
         lyrics_html = self.fetch_from_html(html)
         if lyrics_html:
-            text = self.h.handle(lyrics_html).strip()
+            text = self.h.unescape(self.h.handle(lyrics_html)).strip()
 
             if re.sub("\W", "", text, flags=re.UNICODE).lower().replace("instrumental", "") != "":
                 text = text.replace("\r\n", "\n")
