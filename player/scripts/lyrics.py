@@ -24,14 +24,14 @@ def fetch_lyrics(url):
 def rebuild_lyrics(fetcher_class, commit=False):
     fetcher = [fetcher for fetcher in fetchers
                if fetcher["fetcher"].__class__.__name__ == fetcher_class][0]
-    for l in db.query(Lyrics).filter(Lyrics.provider == fetcher["fetcher"].__class__.__name__):
-        if l.html:
-            lyrics = fetcher["fetcher"].fetch(l.html)
-            if lyrics != l.lyrics:
-                print "Lyrics for %s — %s were changed (%d -> %d)" % (l.artist, l.title,
-                                                                      len(l.lyrics) if l.lyrics else -1,
-                                                                      len(lyrics) if lyrics else -1)
-                l.lyrics = lyrics
+    for lyrics in db.session.query(Lyrics).filter(Lyrics.provider == fetcher["fetcher"].__class__.__name__):
+        if lyrics.html:
+            text = fetcher["fetcher"].fetch(lyrics.html)
+            if text != lyrics.text:
+                print "Lyrics for %s — %s were changed (%d -> %d)" % (lyrics.artist, lyrics.title,
+                                                                      len(lyrics.text) if lyrics.text else -1,
+                                                                      len(text) if text else -1)
+                lyrics.text = text
 
     if commit:
-        db.commit()
+        db.session.commit()
