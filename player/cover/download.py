@@ -12,6 +12,8 @@ from StringIO import StringIO
 
 from themyutils.requests import chrome
 
+from player.app import app
+
 __all__ = [b"download_cover"]
 
 logger = logging.getLogger(__name__)
@@ -32,7 +34,7 @@ def download_cover(music_dir, directory, min_size):
         cover_io = _cover_io(covers[0])
         if not _cover_size_ok(covers[0], min_size):
             cover_io = (_find_bigger_cover_io(cover_io, covers[1:], min_size) or
-                        _find_bigger_cover_io(cover_io, _query_cover(q, imgsz="xxlarge"), min_size) or
+                        _find_bigger_cover_io(cover_io, _query_cover(q, imgSize="xxlarge"), min_size) or
                         cover_io)
 
     if cover_io:
@@ -47,9 +49,17 @@ def download_cover(music_dir, directory, min_size):
 
 def _query_cover(q, **kwargs):
     try:
-        results = requests.get("https://ajax.googleapis.com/ajax/services/search/images",
-                               params=dict(v="1.0", q=q, **kwargs),
-                               headers={"Referer": "http://player.thelogin.ru"}).json()["responseData"]["results"]
+        results = requests.get(
+            "https://www.googleapis.com/customsearch/v1",
+            params=dict(
+                key=app.config["GOOGLE_SEARCH_API_KEY"],
+                cx=app.config["GOOGLE_SEARCH_API_CX"],
+                q=q,
+                searchType="image",
+                alt="json",
+                **kwargs
+            )
+        ).json()["items"]
         logger.info("For query=%r, kwargs=%r got covers=%r", q, kwargs, results)
         return results
     except:
@@ -58,11 +68,12 @@ def _query_cover(q, **kwargs):
 
 
 def _cover_size_ok(cover, min_size):
-    return map(int, (cover["width"], cover["height"])) > min_size
+    return map(int, (cover["image"]["width"], cover["image"]["height"])) > min_size
 
 
 def _cover_io(cover):
-    return StringIO(requests.get(cover["url"], headers={"User-Agent": chrome}).content)
+    return StringIO(requests.get(cover["link"], headers={"Referer": cover["image"]["contextLink"],
+                                                         "User-Agent": chrome}).content)
 
 
 def _find_bigger_cover_io(cover_io, covers, min_size):

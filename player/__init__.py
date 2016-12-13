@@ -2,6 +2,7 @@
 from __future__ import absolute_import, division, unicode_literals
 
 from flask_bootstrap import Bootstrap
+import logging
 import mimetypes
 from raven import Client
 from raven.contrib.celery import register_logger_signal, register_signal
@@ -21,6 +22,8 @@ import player.worker
 mimetypes.init()
 
 Bootstrap(app)
+
+logging.basicConfig(level=logging.DEBUG)
 
 if app.config.get("SENTRY_DSN"):
     app.config["RAVEN_IGNORE_EXCEPTIONS"] = [HTTPException]
