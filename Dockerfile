@@ -1,13 +1,9 @@
 FROM ubuntu:xenial
 
 RUN apt-get update && \
-    apt-get install -y locales
-RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
-    locale-gen
-ENV LANG en_US.UTF-8
-ENV LC_ALL en_US.UTF-8
-
-RUN apt-get install -y \
+    apt-get install -y \
+    locales \
+    \
     python \
     python-dev \
     python-pip \
@@ -17,9 +13,14 @@ RUN apt-get install -y \
     python-psycopg2 \
     python-skimage \
     uwsgi \
-    uwsgi-plugin-python
+    uwsgi-plugin-python \
+    \
+    ffmpeg
 
-RUN apt-get install -y ffmpeg
+RUN echo "en_US.UTF-8 UTF-8" >> /etc/locale.gen && \
+    locale-gen
+ENV LANG en_US.UTF-8
+ENV LC_ALL en_US.UTF-8
 
 RUN mkdir /player
 RUN mkdir /player/player
