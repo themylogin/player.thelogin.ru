@@ -54,8 +54,12 @@ def find_cover(directory, check_siblings=True):
         rating = 0
 
         if b"front" in image.lower():
-            rating += 100000
+            rating += 1000000
         if b"folder" in image.lower():
+            rating += 100000
+        if not any(os.path.dirname(another_image) == os.path.dirname(image)
+                   for another_image in images_size.keys()
+                   if another_image != image):
             rating += 10000
 
         rating += 1000 * (worse_aspect_ratio - (max(size) / min(size)))
