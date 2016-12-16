@@ -21,6 +21,6 @@ def create_player_engine(url):
     o = urlparse.urlparse(url)
 
     if o.scheme == "mpd":
-        return MPD(o.hostname, o.port)
+        return MPD(o.hostname, o.port or 6600)
 
     raise ValueError("%s player engine is not supported" % o.scheme)
