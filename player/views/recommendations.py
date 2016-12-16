@@ -64,8 +64,8 @@ def recommendations_unheard_streamer(username):
                     headers={"Content-type": "application/json"},
                     data=json.dumps({"query": """SELECT COUNT(*) AS count
                                                  FROM scrobble
-                                                 INNER JOIN user ON (user.id = scrobble.user_id)
-                                                 WHERE user.username = :username
+                                                 INNER JOIN "user" ON (\"user\".id = scrobble.user_id)
+                                                 WHERE \"user\".username = :username
                                                    AND scrobble.artist = :artist
                                                    AND scrobble.track = :track""",
                                      "params": {"username": username,
