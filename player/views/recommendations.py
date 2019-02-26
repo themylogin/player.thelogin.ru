@@ -73,6 +73,8 @@ def recommendations_unheard_streamer(username):
                                                 "track": f["title"]}})
                 ).json()[0]["count"]
 
+                logger.info("%r — %r from %r was scrobbled %d time(s)" % (f["artist"], f["title"], d, scrobble_count))
+
                 if scrobble_count == 0:
                     directory = directory_for_track(f["path"])
                     if directory:
@@ -81,8 +83,6 @@ def recommendations_unheard_streamer(username):
                     limit -= 1
                     if limit == 0:
                         return
-                else:
-                    logger.info("%r — %r from %r was scrobbled %d time(s)" % (f["artist"], f["title"], d, scrobble_count))
 
                 break
 
