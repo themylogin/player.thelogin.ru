@@ -47,6 +47,7 @@ def recommendations_unheard_streamer(username):
     else:
         random.shuffle(directories)
 
+    yielded = set()
     for d in directories:
         files = []
         for root, _, _ in os.walk(os.path.join(library_path, d)):
@@ -75,14 +76,17 @@ def recommendations_unheard_streamer(username):
 
                 logger.info("%r — %r from %r was scrobbled %d time(s)" % (f["artist"], f["title"], d, scrobble_count))
 
-                if scrobble_count == 0:
+                if scrobble_count <= 1:
                     directory = directory_for_track(f["path"])
                     if directory:
-                        yield json.dumps(directory) + b"\n"
+                        to_yield = json.dumps(directory)
+                        if to_yield not in yielded:
+                            yielded.add(to_yield)
+                            yield to_yield + b"\n"
 
-                    limit -= 1
-                    if limit == 0:
-                        return
+                            limit -= 1
+                            if limit == 0:
+                                return
 
                 break
 
