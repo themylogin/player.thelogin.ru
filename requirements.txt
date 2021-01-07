@@ -21,7 +21,7 @@ Flask-SQLAlchemy==2.3.2
 html2text==2018.1.9
 idna==2.8
 itsdangerous==1.1.0
-Jinja2==2.10
+Jinja2==2.10.1
 kombu==3.0.37
 Mako==1.0.7
 MarkupSafe==1.1.1
