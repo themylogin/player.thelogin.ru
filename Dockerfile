@@ -25,10 +25,10 @@ ENV LC_ALL en_US.UTF-8
 RUN mkdir /player
 RUN mkdir /player/player
 RUN touch /player/player/__init__.py
-ADD setup.py /player
+ADD requirements.txt setup.py /player/
 
 WORKDIR /player
-RUN pip install flask
+RUN pip install -r requirements.txt
 RUN python setup.py develop
 
 RUN rm -rf /player
