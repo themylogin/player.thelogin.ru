@@ -41,6 +41,4 @@ nosetests.xml
 data/library/
 data/library_revisions/
 data/tmp/
-player/config.py
 .env
-alembic.ini
